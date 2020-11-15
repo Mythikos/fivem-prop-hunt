@@ -52,10 +52,11 @@ namespace PropHunt.Client
 
         public void OnStateChanged(int state)
         {
-            TextUtil.SendChatMessage($"OnUpdateGameState: {state}");
 
             GameStates gameState = (GameStates)state;
             PlayerTeams playerState = Game.Player.State.Get<PlayerTeams>(Constants.StateBagKeys.PlayerTeam);
+
+            TextUtil.SendChatMessage($"OnUpdateGameState: {gameState}");
 
             // Enable PvP
             SetPlayerTeam(Game.Player.Handle, (int)playerState);
@@ -63,16 +64,16 @@ namespace PropHunt.Client
             SetCanAttackFriendly(PlayerPedId(), true, true);
 
             // Determine game state
-            if (state.Equals(GameStates.WaitingForPlayers))
+            if (gameState.Equals(GameStates.WaitingForPlayers))
             {
                 this._parentInstance.Player.SetInvincible(true);
             }
-            else if (state.Equals(GameStates.PreRound))
+            else if (gameState.Equals(GameStates.PreRound))
             {
                 this._parentInstance.SpawnManager_SpawnPlayer(-1486, 195, 56);
                 this._parentInstance.Player.SetInvincible(true);
             }
-            else if (state.Equals(GameStates.Hiding))
+            else if (gameState.Equals(GameStates.Hiding))
             {
                 if (playerState == PlayerTeams.Hunter)
                 {
@@ -85,7 +86,7 @@ namespace PropHunt.Client
                     this._parentInstance.Player.SetInvincible(false);
                 }
             }
-            else if (state.Equals(GameStates.Hunting))
+            else if (gameState.Equals(GameStates.Hunting))
             {
                 this._parentInstance.Player.SetInvincible(false);
 
@@ -100,7 +101,7 @@ namespace PropHunt.Client
                     });
                 }
             }
-            else if (state.Equals(GameStates.PostRound))
+            else if (gameState.Equals(GameStates.PostRound))
             {
                 this._parentInstance.Player.Reset();
             }
