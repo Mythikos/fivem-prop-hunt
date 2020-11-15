@@ -23,7 +23,7 @@ namespace PropHunt.Client.Library.Utils
             IntersectVegetation = 256
         };
 
-        public static List<Entity> GetSurroundingEntities(Entity fromEntity, int radius, IntersectOptions flags)
+        public static List<Entity> GetSurroundingEntities(Entity fromEntity, float radius, IntersectOptions flags)
         {
             const int DEGREES = 1;
 
@@ -39,9 +39,6 @@ namespace PropHunt.Client.Library.Utils
             Vector3 raycastSurfaceNormal = default;
             int raycastEntityHitHandle = default;
             Entity raycastFoundEntity = default;
-
-            // Wait so it isn't firing off too quickly
-            Wait(10);
 
             // Start lookin
             for (int i = 0; i < (360 / DEGREES); i++)

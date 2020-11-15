@@ -70,7 +70,7 @@ namespace PropHunt.Server
             player = GameManager.AllPlayers[playerServerId];
             if (player != null)
             {
-                if (GameManager.State == GameStates.PreRound || GameManager.State == GameStates.Hiding || GameManager.State == GameStates.Hunting)
+                if (GameManager.State == GameStates.Hiding || GameManager.State == GameStates.Hunting)
                     TriggerClientEvent(player, Constants.Events.Client.ClientAction, Constants.Events.Client.Actions.Kill);
 
                 Debug.WriteLine($"OnPlayerInitialSpawn: {player.Name}");

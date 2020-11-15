@@ -50,16 +50,27 @@ namespace PropHunt.Server.Library.Managers
                 {
                     //
                     // Assign hunters and prop players
-                    var hunterCount = (int)Math.Floor(GameManager.AllPlayers.Count() / 10.0);
+                    int hunterCount = (int)Math.Floor(GameManager.AllPlayers.Count() / 10.0);
                     for (int i = 0; i < (hunterCount < 1 ? 1 : hunterCount); i++)
-                        GameManager.AllPlayers.GetRandom().State.Set<PlayerStates>(Constants.StateBagKeys.PlayerState, PlayerStates.Hunter, true);
+                    {
+                        Player randomPlayer = GameManager.AllPlayers.Random();
+                        randomPlayer.State.Set<PlayerTeams>(Constants.StateBagKeys.PlayerState, PlayerTeams.Hunter, true);
+                    }
 
                     foreach (Player player in GameManager.AllPlayers)
-                        if (player.State.Get<PlayerStates>(Constants.StateBagKeys.PlayerState) != PlayerStates.Hunter)
-                            player.State.Set<PlayerStates>(Constants.StateBagKeys.PlayerState, PlayerStates.Prop, true);
+                    {
+                        if (player.State.Get<PlayerTeams>(Constants.StateBagKeys.PlayerState) != PlayerTeams.Hunter)
+                            player.State.Set<PlayerTeams>(Constants.StateBagKeys.PlayerState, PlayerTeams.Prop, true);
+                    }
+
+                    //
+                    // Determine weather and time for round
+                    int weatherState = Enum.GetValues(typeof(WeatherStates)).Random<int>();
+                    int timeState = Enum.GetValues(typeof(TimeOfDayStates)).Random<int>();
 
                     //
                     // Trigger game state change event
+                    PropHunt.TriggerClientEvent(Constants.Events.Client.SyncTimeAndWeather, timeState, weatherState);
                     PropHunt.TriggerClientEvent(Constants.Events.Client.GameStateUpdate, (int)GameStates.PreRound);
 
                     //
@@ -84,14 +95,10 @@ namespace PropHunt.Server.Library.Managers
                     GameManager.TimeRemainingInSeconds = 60;
                     Debug.WriteLine($"GameState: {GameManager.State}");
                 }
-                else
-                {
-                    GameManager.TimeRemainingInSeconds -= TIMER_INTERVAL / 1000f;
-                }
             }
             else if (GameManager.State == GameStates.Hiding)
             {
-                if (GameManager.TimeRemainingInSeconds <= 0 || GameManager.AllPlayers.Count(x => x.State.Get<PlayerStates>(Constants.StateBagKeys.PlayerState) == PlayerStates.Prop) <= 0 || GameManager.AllPlayers.Count(x => x.State.Get<PlayerStates>(Constants.StateBagKeys.PlayerState) == PlayerStates.Hunter) <= 0)
+                if (GameManager.TimeRemainingInSeconds <= 0 || GameManager.AllPlayers.Count(x => x.State.Get<PlayerTeams>(Constants.StateBagKeys.PlayerState) == PlayerTeams.Prop) <= 0 || GameManager.AllPlayers.Count(x => x.State.Get<PlayerTeams>(Constants.StateBagKeys.PlayerState) == PlayerTeams.Hunter) <= 0)
                 {
                     //
                     // Trigger game state change event
@@ -103,15 +110,11 @@ namespace PropHunt.Server.Library.Managers
                     GameManager.TimeRemainingInSeconds = 300;
                     Debug.WriteLine($"GameState: {GameManager.State}");
                 }
-                else
-                {
-                    GameManager.TimeRemainingInSeconds -= TIMER_INTERVAL / 1000f;
-                }
             }
             
             else if (GameManager.State == GameStates.Hunting)
             {
-                if (GameManager.TimeRemainingInSeconds <= 0 || GameManager.AllPlayers.Count(x => x.State.Get<PlayerStates>(Constants.StateBagKeys.PlayerState) == PlayerStates.Prop) <= 0 || GameManager.AllPlayers.Count(x => x.State.Get<PlayerStates>(Constants.StateBagKeys.PlayerState) == PlayerStates.Hunter) <= 0)
+                if (GameManager.TimeRemainingInSeconds <= 0 || GameManager.AllPlayers.Count(x => x.State.Get<PlayerTeams>(Constants.StateBagKeys.PlayerState) == PlayerTeams.Prop) <= 0 || GameManager.AllPlayers.Count(x => x.State.Get<PlayerTeams>(Constants.StateBagKeys.PlayerState) == PlayerTeams.Hunter) <= 0)
                 {
                     //
                     // Trigger game state change event
@@ -122,10 +125,6 @@ namespace PropHunt.Server.Library.Managers
                     GameManager.State = GameStates.PostRound;
                     GameManager.TimeRemainingInSeconds = 30;
                     Debug.WriteLine($"GameState: {GameManager.State}");
-                }
-                else
-                {
-                    GameManager.TimeRemainingInSeconds -= TIMER_INTERVAL / 1000f;
                 }
             }
 
@@ -142,15 +141,22 @@ namespace PropHunt.Server.Library.Managers
                     GameManager.State = GameStates.WaitingForPlayers;
                     Debug.WriteLine($"GameState: {GameManager.State}");
                 }
-                else
-                {
-                    GameManager.TimeRemainingInSeconds -= TIMER_INTERVAL / 1000f;
-                }
+            }
+
+            //
+            // Decrement time
+            if (GameManager.TimeRemainingInSeconds <= 0)
+            {
+                GameManager.TimeRemainingInSeconds = 0;
+            }
+            else
+            {
+                GameManager.TimeRemainingInSeconds -= TIMER_INTERVAL / 1000f;
             }
 
             //
             // Send a global update regarding the current state and time remaining
-            PropHunt.TriggerClientEvent(Constants.Events.Client.GameSync, (int)GameManager.State, GameManager.TimeRemainingInSeconds);
+            PropHunt.TriggerClientEvent(Constants.Events.Client.SyncGameManager, (int)GameManager.State, GameManager.TimeRemainingInSeconds);
         }
     }
 }

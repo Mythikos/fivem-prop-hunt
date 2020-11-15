@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using PropHunt.Shared.Enumerations;
 using static CitizenFX.Core.Native.API;
 
 namespace PropHunt.Client.Library.Extensions
@@ -25,12 +26,7 @@ namespace PropHunt.Client.Library.Extensions
             float finalPropZ = 0f;
 
             if (player.State.Get(Constants.StateBagKeys.PlayerPropHandle) != null)
-            {
-                DetachEntity(player.State.Get(Constants.StateBagKeys.PlayerPropHandle), true, false);
-                DeleteObject(ref propHandle);
-                propHandle = default;
-                player.State.Set(Constants.StateBagKeys.PlayerPropHandle, null, true);
-            }
+                player.RemoveProp();
 
             pedHandle = Game.PlayerPed.Handle;
             pedCoords = GetEntityCoords(pedHandle, true);
@@ -48,6 +44,27 @@ namespace PropHunt.Client.Library.Extensions
             SetEntityCoords(pedHandle, pedCoords.X, pedCoords.Y, pedCoords.Z + 0.25f, true, true, true, false);
 
             player.State.Set(Constants.StateBagKeys.PlayerPropHandle, propHandle, true);
+        }
+
+        public static void RemoveProp(this Player player)
+        {
+            int propHandle = default;
+
+            if (player.State.Get(Constants.StateBagKeys.PlayerPropHandle) != null)
+            {
+                propHandle = player.State.Get(Constants.StateBagKeys.PlayerPropHandle);
+                DetachEntity(propHandle, true, false);
+                DeleteObject(ref propHandle);
+                player.State.Set(Constants.StateBagKeys.PlayerPropHandle, null, true);
+            }
+
+            SetEntityVisible(player.Handle, true, true);
+        }
+
+        public static void RoundReset(this Player player)
+        {
+            player.RemoveProp();
+            player.State.Set<PlayerTeams>(Constants.StateBagKeys.PlayerState, PlayerTeams.Unassigned, true);
         }
     }
 }

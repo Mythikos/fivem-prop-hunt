@@ -22,22 +22,22 @@ namespace PropHunt.Client.Library.Managers
         public static void Initialize(PropHunt pluginInstance)
         {
             Game.Player.State.Set(Constants.StateBagKeys.PlayerInitialSpawn, true, true);
-            Game.Player.State.Set<PlayerStates>(Constants.StateBagKeys.PlayerState, PlayerStates.Dead, true);
+            Game.Player.State.Set<PlayerTeams>(Constants.StateBagKeys.PlayerState, PlayerTeams.Unassigned, true);
             Game.Player.State.Set(Constants.StateBagKeys.PlayerPropHandle, null, true);
             _pluginInstance = pluginInstance;
         }
 
         public static async Task OnTick()
         {
-            PlayerStates playerState;
+            PlayerTeams playerState;
 
             //
             // Disable vehicle/pedestrian spawns
-            SetVehicleDensityMultiplierThisFrame(0f);
             SetPedDensityMultiplierThisFrame(0f);
+            SetScenarioPedDensityMultiplierThisFrame(0f, 0f);
             SetRandomVehicleDensityMultiplierThisFrame(0f);
             SetParkedVehicleDensityMultiplierThisFrame(0f);
-            SetScenarioPedDensityMultiplierThisFrame(0f, 0f);
+            SetVehicleDensityMultiplierThisFrame(0f);
 
             //
             // Is it the right state
@@ -45,8 +45,8 @@ namespace PropHunt.Client.Library.Managers
             {
                 //
                 // Handle hunter's view
-                playerState = Game.Player.State.Get<PlayerStates>(Constants.StateBagKeys.PlayerState);
-                if (playerState == PlayerStates.Hunter)
+                playerState = Game.Player.State.Get<PlayerTeams>(Constants.StateBagKeys.PlayerState);
+                if (playerState == PlayerTeams.Hunter)
                 {
                     ShowHudComponentThisFrame((int)HudComponent.WeaponWheel);
                     foreach (int componentValue in Enum.GetValues(typeof(HudComponent)))
@@ -56,22 +56,19 @@ namespace PropHunt.Client.Library.Managers
 
                 //
                 // Hande the prop's view
-                else if (playerState == PlayerStates.Prop)
+                else if (playerState == PlayerTeams.Prop)
                 {
                     ShowHudComponentThisFrame((int)HudComponent.Reticle);
                     foreach (int componentValue in Enum.GetValues(typeof(HudComponent)))
                         if (componentValue != (int)HudComponent.Reticle)
                             HideHudComponentThisFrame(componentValue);
 
-                    await Task.Factory.StartNew(() =>
+                    List<Entity> entities1 = EntityUtil.GetSurroundingEntities(Game.PlayerPed, 10, EntityUtil.IntersectOptions.IntersectObjects).ToList();
+                    foreach (Entity entity in entities1)
                     {
-                        List<Entity> entities = EntityUtil.GetSurroundingEntities(Game.PlayerPed, 10, EntityUtil.IntersectOptions.IntersectObjects).ToList();
-                        foreach (Entity entity in entities)
-                        {
-                            EntityUtil.HighlightEntity(entity, 0.035f, 0.035f, 0.025f, 0.025f, new[] { 0, 0, 0, 255 });
-                            EntityUtil.HighlightEntity(entity, 0.035f, 0.035f, 0.015f, 0.015f, new[] { 255, 255, 255, 255 });
-                        }
-                    });
+                        EntityUtil.HighlightEntity(entity, 0.035f, 0.035f, 0.025f, 0.025f, new[] { 0, 0, 0, 255 });
+                        EntityUtil.HighlightEntity(entity, 0.035f, 0.035f, 0.015f, 0.015f, new[] { 255, 255, 255, 255 });
+                    }
 
                     int targetEntityHandle = default;
                     GetEntityPlayerIsFreeAimingAt(Game.Player.Handle, ref targetEntityHandle);
@@ -92,9 +89,16 @@ namespace PropHunt.Client.Library.Managers
         #region State Helpers
         public static void OnUpdateGameState(GameStates state)
         {
-            PlayerStates playerState = Game.Player.State.Get<PlayerStates>(Constants.StateBagKeys.PlayerState);
             TextUtil.SendChatMessage($"OnUpdateGameState: {state}");
+            
+            PlayerTeams playerState = Game.Player.State.Get<PlayerTeams>(Constants.StateBagKeys.PlayerState);
+            
+            // Enable PvP
+            SetPlayerTeam(Game.Player.Handle, (int)playerState);
+            NetworkSetFriendlyFireOption(true);
+            SetCanAttackFriendly(PlayerPedId(), true, true);
 
+            // Determine game state
             if (state.Equals(GameStates.WaitingForPlayers))
             {
                 SetEntityInvincible(Game.PlayerPed.Handle, true);
@@ -106,13 +110,13 @@ namespace PropHunt.Client.Library.Managers
             }
             else if (state.Equals(GameStates.Hiding))
             {
-                if (playerState == PlayerStates.Hunter)
+                if (playerState == PlayerTeams.Hunter)
                 {
                     SetTimecycleModifier("Glasses_BlackOut");
                     FreezeEntityPosition(Game.PlayerPed.Handle, true);
                     SetEntityInvincible(Game.PlayerPed.Handle, true);
                 }
-                else  if (playerState == PlayerStates.Prop)
+                else if (playerState == PlayerTeams.Prop)
                 {
                     SetEntityInvincible(Game.PlayerPed.Handle, false);
                 }
@@ -121,10 +125,12 @@ namespace PropHunt.Client.Library.Managers
             {
                 SetEntityInvincible(Game.PlayerPed.Handle, false);
 
-                if (playerState == PlayerStates.Hunter)
+                if (playerState == PlayerTeams.Hunter)
                 {
                     ClearTimecycleModifier();
                     FreezeEntityPosition(Game.PlayerPed.Handle, false);
+
+                    GiveWeaponToPed(Game.PlayerPed.Handle, (uint)GetHashKey("WEAPON_PISTOL"), 999, false, true);
                     GiveWeaponToPed(Game.PlayerPed.Handle, (uint)GetHashKey("WEAPON_SMG"), 999, false, true);
                 }
             }
@@ -132,7 +138,7 @@ namespace PropHunt.Client.Library.Managers
             {
                 SetEntityInvincible(Game.PlayerPed.Handle, true);
                 RemoveAllPedWeapons(Game.PlayerPed.Handle, true);
-                Game.Player.State.Set<PlayerStates>(Constants.StateBagKeys.PlayerState, PlayerStates.Dead, true);
+                Game.Player.RoundReset();
             }
         }
         #endregion

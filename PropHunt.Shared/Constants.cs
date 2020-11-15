@@ -14,8 +14,9 @@ namespace PropHunt.Shared
             public static class Client
             {
                 public const string ClientAction = "PropHunt:Events:Client:ClientAction";
-                public const string GameSync = "PropHunt:Events:Client:GameSync";
                 public const string GameStateUpdate = "PropHunt:Events:Client:GameStateUpdate";
+                public const string SyncGameManager = "PropHunt:Events:Client:SyncGameManager";
+                public const string SyncTimeAndWeather = "PropHunt:Events:Client:SyncTimeAndWeather";
 
                 public static class Actions
                 {

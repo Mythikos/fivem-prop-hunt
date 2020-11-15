@@ -114,20 +114,21 @@ namespace PropHunt.Client.Library.Managers
                 _pluginInstance.SpawnPlayer(Game.PlayerPed.Position.X, Game.PlayerPed.Position.Y, Game.PlayerPed.Position.Z);
             }), false);
 
-            //RegisterCommand("spawnidiot", new Action<int, List<object>, string>((source, args, raw) =>
-            //{
-            //    Vector3 entityCoords = default;
-            //    int newPedHandle = default;
-            //    int propHandle = default;
-            //    Vector3 pedCoords = default;
-
-            //    entityCoords = GetEntityCoords(Game.PlayerPed.Handle, true);
-            //    newPedHandle = CreatePed(0, (uint)GetHashKey("a_m_y_hipster_01"), entityCoords.X, entityCoords.Y, entityCoords.Z, Game.PlayerPed.Heading, true, false);
-            //    pedCoords = GetEntityCoords(newPedHandle, true);
-            //    propHandle = CreateObject(GetHashKey("prop_amb_handbag_01"), 0f, 0f, 0f, true, true, true);
-            //    AttachEntityToEntity(propHandle, newPedHandle, GetEntityBoneIndexByName(newPedHandle, "IX_ROOT"), 3f, 0f, 0f, 0f, 0f, 0f, false, false, true, true, 1, true);// true, false, true, true, 1, true);
-            //    FreezeEntityPosition(newPedHandle, true);
-            //}), false);
+            RegisterCommand("reconfigure", new Action<int, List<object>, string>((source, args, raw) =>
+            {
+                TextUtil.SendChatMessage($"Reconfiguring props...");
+                var list = EntityUtil.GetSurroundingEntities(Game.PlayerPed, 20f, EntityUtil.IntersectOptions.IntersectObjects);
+                if (list.Count() > 0)
+                {
+                    TextUtil.SendChatMessage($"    Found props to configure");
+                    foreach (Entity entity in list)
+                    {
+                        entity.IsInvincible = false;
+                        TextUtil.SendChatMessage($"    Reconfiguring entity: {entity.Handle}");
+                    }
+                }
+                TextUtil.SendChatMessage($"Reconfiguration complete.");
+            }), false);
         }
     }
 }

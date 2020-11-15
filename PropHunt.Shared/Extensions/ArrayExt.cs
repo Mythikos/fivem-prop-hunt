@@ -6,15 +6,15 @@ using System.Threading.Tasks;
 
 namespace PropHunt.Shared.Extensions
 {
-    public static class IEnumerableExt
+    public static class ArrayExt
     {
-        public static T Random<T>(this IEnumerable<T> list)
+        public static T Random<T>(this Array array)
         {
-            if (list == null)
+            if (array == null)
                 return default;
 
             Random random = new Random(Guid.NewGuid().GetHashCode());
-            return list.ElementAt(random.Next(0, list.Count()));
+            return (T)array.GetValue(random.Next(0, array.Length));
         }
     }
 }

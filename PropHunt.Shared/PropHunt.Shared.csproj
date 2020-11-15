@@ -42,9 +42,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Attributes\NativeValueInt.cs" />
+    <Compile Include="Attributes\NativeValueString.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="Enumerations\GameStates.cs" />
-    <Compile Include="Enumerations\PlayerStates.cs" />
+    <Compile Include="Enumerations\PlayerTeams.cs" />
+    <Compile Include="Enumerations\TimeOfDayStates.cs" />
+    <Compile Include="Enumerations\WeatherStates.cs" />
+    <Compile Include="Extensions\ArrayExt.cs" />
+    <Compile Include="Extensions\AttributeExt.cs" />
     <Compile Include="Extensions\IEnumerableExt.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace PropHunt.Shared.Enumerations
 {
-    public enum PlayerStates
+    public enum PlayerTeams
     {
-        Dead,
+        Unassigned,
         Hunter,
         Prop
     }
