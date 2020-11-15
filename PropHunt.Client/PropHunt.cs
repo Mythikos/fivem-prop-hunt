@@ -22,20 +22,22 @@ using PropHunt.Shared.Extensions;
 ///     1593 3219 40 is a good position
 /// 
 /// TODO:
-///     Props need to have limits of what they can and can't become. Both by type (ped vs prop vs car) and size.
+///     X Props need to have limits of what they can and can't become. Both by type (ped vs prop vs car) and size.
 ///     Need to add locations or "sections" of the map to play on
-///     Remove attached props from player during round reset
-///     Based prop player health on dimensions of prop / disable auto health regeneration
+///     X Remove attached props from player during round reset
+///     X Based prop player health on dimensions of prop / disable auto health regeneration
 ///     When hunters are blinded, weapon wheel removes blind. Need to disable weapon wheel until round is Hunting
 ///     When the attached prop breaks, the player needs to die
-///     
-/// PLAY TEST NOTES:
-///     Player's are freely respawning during the game
-///     Player's stamina should be set to 100% permanently 
+///     X Player's are freely respawning during the game
+///     X Player's stamina should be set to 100% permanently 
 ///     Prop rotation replication is not working
 ///     Add blip above player's heads that are on the same team
 ///     Add sound taunting mechanic if player is stationary for over 60 seconds, every 60 seconds
-///     When all hunters are dead, game doesn't end ?
+///     OnPlayerDied hook seems to be pretty irregular
+///     
+/// 
+///     TEST THE PLAYER KILLED, DIED, WASTED EVENTS AND WHEN THEY ARE CALLED. DIED IS INCONSISTENT, APPEARS TO BE BECAUSE DIED AND KILLED ARE IN AN ELSE STATEMENT - ONLY 
+///     ONE CAN BE CALLED AT A TIME. WATED APPEARS TO BE ALWAYS CALLED IF THE PLAYER DIED.
 /// </summary>
 namespace PropHunt.Client
 {
@@ -52,7 +54,9 @@ namespace PropHunt.Client
             // Subscribe to events
             this.Tick += OnTick;
             this.EventHandlers.Add("playerSpawned", new Action(OnPlayerSpawned));
-            this.EventHandlers.Add("baseevents:onPlayerDied", new Action<Player, string>(OnPlayerDied));
+            this.EventHandlers.Add("baseevents:onPlayerDied", new Action<Player, int>(OnPlayerDied));
+            this.EventHandlers.Add("baseevents:onPlayerKilled", new Action<Player, int, List<dynamic>>(OnPlayerKilled));
+            this.EventHandlers.Add("baseevents:onPlayerWasted", new Action<Player, string>(OnPlayerWasted));
             this.EventHandlers.Add("gameEventTriggered", new Action<string, List<dynamic>>(OnGameEventTriggered));
             this.EventHandlers.Add(Constants.Events.Client.SyncGameManager, new Action<int, float>(OnSyncGameManager));
             this.EventHandlers.Add(Constants.Events.Client.GameStateUpdate, new Action<int>(OnGameStateUpdate));
@@ -77,8 +81,10 @@ namespace PropHunt.Client
             TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.1f), $"Player State: {Game.Player.State.Get<PlayerTeams>(Constants.StateBagKeys.PlayerState)}");
             TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.2f), $"Player Initial Spawn: {Game.Player.State.Get(Constants.StateBagKeys.PlayerInitialSpawn)}");
             TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.3f), $"Player IsInvincible: {Game.PlayerPed.IsInvincible}");
-            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.4f), $"Time Remaining: {GameManager.TimeRemainingInSeconds}");
-            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.5f), $"Game State: {GameManager.GameState}");
+            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.4f), $"Player Health: {Game.PlayerPed.HealthFloat}");
+            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.5f), $"Player Armor: {Game.PlayerPed.ArmorFloat}");
+            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.6f), $"Time Remaining: {GameManager.TimeRemainingInSeconds}");
+            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.7f), $"Game State: {GameManager.GameState}");
         }
 
         private void OnPlayerSpawned()
@@ -95,9 +101,22 @@ namespace PropHunt.Client
             TriggerServerEvent(Constants.Events.Server.PlayerSpawn, Game.Player.ServerId);
         }
 
-        private void OnPlayerDied([FromSource] Player player, string deathReason)
+        private void OnPlayerDied([FromSource] Player player, int killerType) // CHECK: Changed killerType from string to int
         {
             Game.Player.State.Set<PlayerTeams>(Constants.StateBagKeys.PlayerState, PlayerTeams.Unassigned, true);
+            TextUtil.SendChatMessage("OnPlayerDied");
+        }
+
+        private void OnPlayerKilled([FromSource] Player player, int killerId, List<dynamic> args)
+        {
+            Game.Player.State.Set<PlayerTeams>(Constants.StateBagKeys.PlayerState, PlayerTeams.Unassigned, true);
+            TextUtil.SendChatMessage("OnPlayerKilled");
+        }
+
+        private void OnPlayerWasted([FromSource] Player player, string deathReason)
+        {
+            Game.Player.State.Set<PlayerTeams>(Constants.StateBagKeys.PlayerState, PlayerTeams.Unassigned, true);
+            TextUtil.SendChatMessage("OnPlayerWasted");
         }
 
         private void OnGameEventTriggered(string name, List<dynamic> args)
@@ -239,15 +258,12 @@ namespace PropHunt.Client
             WeatherStates weatherStateEnum = (WeatherStates)weatherState;
             TimeOfDayStates timeStateEnum = (TimeOfDayStates)timeState;
 
-            TextUtil.SendChatMessage($"Changing weather to {weatherStateEnum.GetAttribute<NativeValueString>().NativeValue}.");
             SetWeatherTypePersist(weatherStateEnum.GetAttribute<NativeValueString>().NativeValue);
             SetWeatherTypeNowPersist(weatherStateEnum.GetAttribute<NativeValueString>().NativeValue);
             SetWeatherTypeNow(weatherStateEnum.GetAttribute<NativeValueString>().NativeValue);
             SetOverrideWeather(weatherStateEnum.GetAttribute<NativeValueString>().NativeValue);
             SetForcePedFootstepsTracks(false);
             SetForceVehicleTrails(false);
-
-            TextUtil.SendChatMessage($"Changing time to {timeStateEnum.GetAttribute<NativeValueInt>().NativeValue}.");
             NetworkOverrideClockTime(timeStateEnum.GetAttribute<NativeValueInt>().NativeValue, 0, 0);
         }
 

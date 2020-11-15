@@ -21,10 +21,14 @@ namespace PropHunt.Client.Library.Managers
 
         public static void Initialize(PropHunt pluginInstance)
         {
+            // Handle instance of the client plugin
+            _pluginInstance = pluginInstance;
+
+            // Setup the player
             Game.Player.State.Set(Constants.StateBagKeys.PlayerInitialSpawn, true, true);
             Game.Player.State.Set<PlayerTeams>(Constants.StateBagKeys.PlayerState, PlayerTeams.Unassigned, true);
             Game.Player.State.Set(Constants.StateBagKeys.PlayerPropHandle, null, true);
-            _pluginInstance = pluginInstance;
+            Game.Player.RoundReset();
         }
 
         public static async Task OnTick()
@@ -38,6 +42,11 @@ namespace PropHunt.Client.Library.Managers
             SetRandomVehicleDensityMultiplierThisFrame(0f);
             SetParkedVehicleDensityMultiplierThisFrame(0f);
             SetVehicleDensityMultiplierThisFrame(0f);
+
+            //
+            // All player state items
+            SetPlayerHealthRechargeMultiplier(Game.Player.Handle, 0f);
+            RestorePlayerStamina(PlayerId(), 1f);
 
             //
             // Is it the right state
@@ -90,9 +99,9 @@ namespace PropHunt.Client.Library.Managers
         public static void OnUpdateGameState(GameStates state)
         {
             TextUtil.SendChatMessage($"OnUpdateGameState: {state}");
-            
+
             PlayerTeams playerState = Game.Player.State.Get<PlayerTeams>(Constants.StateBagKeys.PlayerState);
-            
+
             // Enable PvP
             SetPlayerTeam(Game.Player.Handle, (int)playerState);
             NetworkSetFriendlyFireOption(true);

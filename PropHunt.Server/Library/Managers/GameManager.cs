@@ -98,7 +98,9 @@ namespace PropHunt.Server.Library.Managers
             }
             else if (GameManager.State == GameStates.Hiding)
             {
-                if (GameManager.TimeRemainingInSeconds <= 0 || GameManager.AllPlayers.Count(x => x.State.Get<PlayerTeams>(Constants.StateBagKeys.PlayerState) == PlayerTeams.Prop) <= 0 || GameManager.AllPlayers.Count(x => x.State.Get<PlayerTeams>(Constants.StateBagKeys.PlayerState) == PlayerTeams.Hunter) <= 0)
+                if (GameManager.TimeRemainingInSeconds <= 0 
+                    || GameManager.AllPlayers.Count(x => x.State.Get<PlayerTeams>(Constants.StateBagKeys.PlayerState) == PlayerTeams.Prop) <= 0 
+                    || GameManager.AllPlayers.Count(x => x.State.Get<PlayerTeams>(Constants.StateBagKeys.PlayerState) == PlayerTeams.Hunter) <= 0)
                 {
                     //
                     // Trigger game state change event
@@ -114,7 +116,9 @@ namespace PropHunt.Server.Library.Managers
             
             else if (GameManager.State == GameStates.Hunting)
             {
-                if (GameManager.TimeRemainingInSeconds <= 0 || GameManager.AllPlayers.Count(x => x.State.Get<PlayerTeams>(Constants.StateBagKeys.PlayerState) == PlayerTeams.Prop) <= 0 || GameManager.AllPlayers.Count(x => x.State.Get<PlayerTeams>(Constants.StateBagKeys.PlayerState) == PlayerTeams.Hunter) <= 0)
+                if (GameManager.TimeRemainingInSeconds <= 0 
+                    || GameManager.AllPlayers.Count(x => x.State.Get<PlayerTeams>(Constants.StateBagKeys.PlayerState) == PlayerTeams.Prop) <= 0 
+                    || GameManager.AllPlayers.Count(x => x.State.Get<PlayerTeams>(Constants.StateBagKeys.PlayerState) == PlayerTeams.Hunter) <= 0)
                 {
                     //
                     // Trigger game state change event

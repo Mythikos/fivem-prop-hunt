@@ -114,20 +114,22 @@ namespace PropHunt.Client.Library.Managers
                 _pluginInstance.SpawnPlayer(Game.PlayerPed.Position.X, Game.PlayerPed.Position.Y, Game.PlayerPed.Position.Z);
             }), false);
 
-            RegisterCommand("reconfigure", new Action<int, List<object>, string>((source, args, raw) =>
+            RegisterCommand("testsize", new Action<int, List<object>, string>((source, args, raw) =>
             {
-                TextUtil.SendChatMessage($"Reconfiguring props...");
-                var list = EntityUtil.GetSurroundingEntities(Game.PlayerPed, 20f, EntityUtil.IntersectOptions.IntersectObjects);
-                if (list.Count() > 0)
+                Vector3 entityDimensionsMinimum = default;
+                Vector3 entityDimensionsMaximum = default;
+                int targetEntityHandle = default;
+                
+                GetEntityPlayerIsFreeAimingAt(Game.Player.Handle, ref targetEntityHandle);
+                if (targetEntityHandle != default)
                 {
-                    TextUtil.SendChatMessage($"    Found props to configure");
-                    foreach (Entity entity in list)
-                    {
-                        entity.IsInvincible = false;
-                        TextUtil.SendChatMessage($"    Reconfiguring entity: {entity.Handle}");
-                    }
+                    GetModelDimensions((uint)GetEntityModel(targetEntityHandle), ref entityDimensionsMinimum, ref entityDimensionsMaximum);
+                    var length = Math.Abs(entityDimensionsMaximum.X - entityDimensionsMinimum.X);
+                    var width = Math.Abs(entityDimensionsMaximum.Y - entityDimensionsMinimum.Y);
+                    var height = Math.Abs(entityDimensionsMaximum.Z - entityDimensionsMinimum.Z);
+                    var size = length * width * height;
+                    TextUtil.SendChatMessage($"Entity ({targetEntityHandle}) is of size {size}");
                 }
-                TextUtil.SendChatMessage($"Reconfiguration complete.");
             }), false);
         }
     }
