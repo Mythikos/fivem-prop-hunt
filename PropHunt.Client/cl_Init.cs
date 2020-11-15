@@ -1,17 +1,15 @@
 ﻿using CitizenFX.Core;
 using CitizenFX.Core.UI;
-using PropHunt.Client.Library.Utils;
+using PropHunt.Client.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using PropHunt.Client.Library;
-using PropHunt.Client.Library.Managers;
 using static CitizenFX.Core.Native.API;
 using PropHunt.Shared.Enumerations;
 using PropHunt.Shared;
-using PropHunt.Client.Library.Extensions;
+using PropHunt.Client.Extensions;
 using System.Dynamic;
 using PropHunt.Shared.Attributes;
 using PropHunt.Shared.Extensions;
@@ -34,89 +32,63 @@ using PropHunt.Shared.Extensions;
 ///     Add blip above player's heads that are on the same team
 ///     Add sound taunting mechanic if player is stationary for over 60 seconds, every 60 seconds
 ///     OnPlayerDied hook seems to be pretty irregular
-///     
 /// 
 ///     TEST THE PLAYER KILLED, DIED, WASTED EVENTS AND WHEN THEY ARE CALLED. DIED IS INCONSISTENT, APPEARS TO BE BECAUSE DIED AND KILLED ARE IN AN ELSE STATEMENT - ONLY 
 ///     ONE CAN BE CALLED AT A TIME. WATED APPEARS TO BE ALWAYS CALLED IF THE PLAYER DIED.
 /// </summary>
 namespace PropHunt.Client
 {
-    public class PropHunt : BaseScript
+    public class cl_Init : BaseScript
     {
-        public PropHunt()
+        internal cl_Rounds Rounds { get; private set; }
+        internal cl_Player Player { get; private set; }
+        internal cl_Commands Commands { get; private set; }
+
+        public cl_Init()
         {
-            //
-            // Initialize managers
-            GameManager.Initialize(this); // Initialize first first
-            CommandManager.Initialize(this);
+            try
+            {
+                //
+                // Initialize client elements
+                this.Rounds = new cl_Rounds(this);
+                this.Player = new cl_Player(this);
+                this.Commands = new cl_Commands(this);
 
-            //
-            // Subscribe to events
-            this.Tick += OnTick;
-            this.EventHandlers.Add("playerSpawned", new Action(OnPlayerSpawned));
-            this.EventHandlers.Add("baseevents:onPlayerDied", new Action<Player, int>(OnPlayerDied));
-            this.EventHandlers.Add("baseevents:onPlayerKilled", new Action<Player, int, List<dynamic>>(OnPlayerKilled));
-            this.EventHandlers.Add("baseevents:onPlayerWasted", new Action<Player, string>(OnPlayerWasted));
-            this.EventHandlers.Add("gameEventTriggered", new Action<string, List<dynamic>>(OnGameEventTriggered));
-            this.EventHandlers.Add(Constants.Events.Client.SyncGameManager, new Action<int, float>(OnSyncGameManager));
-            this.EventHandlers.Add(Constants.Events.Client.GameStateUpdate, new Action<int>(OnGameStateUpdate));
-            this.EventHandlers.Add(Constants.Events.Client.SyncTimeAndWeather, new Action<int, int>(OnSyncTimeAndWeather));
-            this.EventHandlers.Add(Constants.Events.Client.ClientAction, new Action<string>(OnClientAction));
+                //
+                // Subscribe to events
+                this.Tick += OnTick;
+                this.Tick += this.Rounds.OnTick;
+                this.Tick += this.Player.OnTick;
+                this.EventHandlers.Add("playerSpawned", new Action(this.Player.OnPlayerSpawned));
+                this.EventHandlers.Add("baseevents:onPlayerDied", new Action<Player, int>(this.Player.OnPlayerDied));
+                this.EventHandlers.Add("baseevents:onPlayerKilled", new Action<Player, int, List<dynamic>>(this.Player.OnPlayerKilled));
+                this.EventHandlers.Add("baseevents:onPlayerWasted", new Action<Player, string>(this.Player.OnPlayerWasted));
+                this.EventHandlers.Add("gameEventTriggered", new Action<string, List<dynamic>>(OnGameEventTriggered));
+                this.EventHandlers.Add(Constants.Events.Client.OnRoundSync, new Action<int, float>(this.Rounds.OnSync));
+                this.EventHandlers.Add(Constants.Events.Client.OnRoundStateChanged, new Action<int>(this.Rounds.OnStateChanged));
+                this.EventHandlers.Add(Constants.Events.Client.SyncTimeAndWeather, new Action<int, int>(OnSyncTimeAndWeather));
+                this.EventHandlers.Add(Constants.Events.Client.ClientAction, new Action<string>(OnClientAction));
 
-            //
-            // Output plugin was loaded?
-            Debug.WriteLine($"PropHunt.Client was loaded successfully.");
-            TextUtil.SendChatMessage($"PropHunt.Client was loaded successfully.");
+                Debug.WriteLine($"PropHunt.Client was loaded successfully.");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"PropHunt.Client failed to load: {ex.Message}");
+            }
         }
 
-        #region Native Events
+        #region Client Events
         private async Task OnTick()
         {
             //
-            // Execute manager ticks
-            GameManager.OnTick();
-
-            //
             // Draw debugging
-            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.1f), $"Player State: {Game.Player.State.Get<PlayerTeams>(Constants.StateBagKeys.PlayerState)}");
+            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.1f), $"Player State: {Game.Player.State.Get<PlayerTeams>(Constants.StateBagKeys.PlayerTeam)}");
             TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.2f), $"Player Initial Spawn: {Game.Player.State.Get(Constants.StateBagKeys.PlayerInitialSpawn)}");
             TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.3f), $"Player IsInvincible: {Game.PlayerPed.IsInvincible}");
             TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.4f), $"Player Health: {Game.PlayerPed.HealthFloat}");
             TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.5f), $"Player Armor: {Game.PlayerPed.ArmorFloat}");
-            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.6f), $"Time Remaining: {GameManager.TimeRemainingInSeconds}");
-            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.7f), $"Game State: {GameManager.GameState}");
-        }
-
-        private void OnPlayerSpawned()
-        {
-            // Prevent auto respawns
-            this.SetAutoSpawn(false);
-
-            // Determine type of spawn
-            if (Game.Player.State.Get(Constants.StateBagKeys.PlayerInitialSpawn) == true)
-            {
-                TriggerServerEvent(Constants.Events.Server.PlayerInitialSpawn, Game.Player.ServerId);
-                Game.Player.State.Set(Constants.StateBagKeys.PlayerInitialSpawn, false, true);
-            }
-            TriggerServerEvent(Constants.Events.Server.PlayerSpawn, Game.Player.ServerId);
-        }
-
-        private void OnPlayerDied([FromSource] Player player, int killerType) // CHECK: Changed killerType from string to int
-        {
-            Game.Player.State.Set<PlayerTeams>(Constants.StateBagKeys.PlayerState, PlayerTeams.Unassigned, true);
-            TextUtil.SendChatMessage("OnPlayerDied");
-        }
-
-        private void OnPlayerKilled([FromSource] Player player, int killerId, List<dynamic> args)
-        {
-            Game.Player.State.Set<PlayerTeams>(Constants.StateBagKeys.PlayerState, PlayerTeams.Unassigned, true);
-            TextUtil.SendChatMessage("OnPlayerKilled");
-        }
-
-        private void OnPlayerWasted([FromSource] Player player, string deathReason)
-        {
-            Game.Player.State.Set<PlayerTeams>(Constants.StateBagKeys.PlayerState, PlayerTeams.Unassigned, true);
-            TextUtil.SendChatMessage("OnPlayerWasted");
+            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.6f), $"Time Remaining: {this.Rounds.TimeRemainingInSeconds}");
+            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.7f), $"Game State: {this.Rounds.GameState}");
         }
 
         private void OnGameEventTriggered(string name, List<dynamic> args)
@@ -244,14 +216,6 @@ namespace PropHunt.Client
                 }
             }
         }
-        #endregion
-
-        #region PropHunt Events
-        public void OnSyncGameManager(int gameState, float timeRemainingInSeconds)
-        {
-            GameManager.GameState = (GameStates)gameState;
-            GameManager.TimeRemainingInSeconds = timeRemainingInSeconds;
-        }
 
         public void OnSyncTimeAndWeather(int timeState, int weatherState)
         {
@@ -267,42 +231,36 @@ namespace PropHunt.Client
             NetworkOverrideClockTime(timeStateEnum.GetAttribute<NativeValueInt>().NativeValue, 0, 0);
         }
 
-        public void OnGameStateUpdate(int gameState)
-        {
-            GameManager.OnUpdateGameState((GameStates)gameState);
-        }
-
         public void OnClientAction(string action)
         {
-            switch (action)
+            if (action.Equals(Constants.Events.Client.Actions.Kill))
             {
-                case Constants.Events.Client.Actions.Kill:
-                    Game.PlayerPed.Kill();
-                    break;
-                case Constants.Events.Client.Actions.Spawn:
-                    this.SpawnPlayer(Game.PlayerPed.Position.X, Game.PlayerPed.Position.Y, Game.PlayerPed.Position.Z);
-                    break;
+                Game.PlayerPed.Kill();
+            }
+            else if (action.Equals(Constants.Events.Client.Actions.Spawn))
+            {
+                this.SpawnManager_SpawnPlayer(Game.PlayerPed.Position.X, Game.PlayerPed.Position.Y, Game.PlayerPed.Position.Z);
             }
         }
         #endregion
 
-        #region Player Spawn Exports
-        public void SetAutoSpawn(bool enable)
+        #region Spawn Manager Exports
+        public void SpawnManager_SetAutoSpawn(bool enable)
         {
             this.Exports["spawnmanager"].setAutoSpawn(enable);
         }
 
-        private void ForceRespawn()
+        private void SpawnManager_ForceRespawn()
         {
             this.Exports["spawnmanager"].forceRespawn();
         }
 
-        private void SetAutoSpawnCallback(ExportDictionary export)
+        private void SpawnManager_SetAutoSpawnCallback(ExportDictionary export)
         {
             this.Exports["spawnmanager"].setAutoSpawnCallback(export);
         }
 
-        public void SpawnPlayer(float x, float y, float z, string modelName = "a_m_y_hipster_01")
+        public void SpawnManager_SpawnPlayer(float x, float y, float z, string modelName = "a_m_y_hipster_01")
         {
             dynamic spawnInfo = new ExpandoObject();
             spawnInfo.x = x;
@@ -311,9 +269,9 @@ namespace PropHunt.Client
             spawnInfo.heading = 0;
             spawnInfo.model = GetHashKey(modelName);
 
-            SetAutoSpawnCallback(this.Exports["spawnmanager"].spawnPlayer(spawnInfo));
-            SetAutoSpawn(false);
-            ForceRespawn();
+            SpawnManager_SetAutoSpawnCallback(this.Exports["spawnmanager"].spawnPlayer(spawnInfo));
+            SpawnManager_SetAutoSpawn(false);
+            SpawnManager_ForceRespawn();
         }
         #endregion
     }

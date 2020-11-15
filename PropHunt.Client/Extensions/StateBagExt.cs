@@ -1,8 +1,12 @@
 ﻿using System;
 using CitizenFX.Core;
 
-namespace PropHunt.Client.Library.Extensions
+namespace PropHunt.Client.Extensions
 {
+    /// <summary>
+    /// State bag extensions. 
+    /// Must exist in server scope for CitizenFX.Core for Client.
+    /// </summary>
     internal static class StateBagExt
     {
         public static void Set<T>(this StateBag bag, string key, T value, bool replicated)

@@ -1,9 +1,5 @@
 ﻿using CitizenFX.Core;
-using PropHunt.Client.Library;
-using PropHunt.Client.Library.Extensions;
-using PropHunt.Client.Library.Utils;
-using PropHunt.Shared;
-using PropHunt.Shared.Enumerations;
+using PropHunt.Client.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,16 +7,24 @@ using System.Text;
 using System.Threading.Tasks;
 using static CitizenFX.Core.Native.API;
 
-namespace PropHunt.Client.Library.Managers
+namespace PropHunt.Client
 {
-    internal static class CommandManager
+    internal class cl_Commands
     {
-        private static PropHunt _pluginInstance;
+        private cl_Init _parentInstance;
 
-        public static void Initialize(PropHunt pluginInstance)
+        public cl_Commands(cl_Init parentInstance)
         {
-            _pluginInstance = pluginInstance;
+            if (parentInstance == null)
+                throw new ArgumentNullException("parentInstance");
 
+            this._parentInstance = parentInstance;
+
+            InitializeCommands();
+        }
+
+        public void InitializeCommands()
+        {
             RegisterCommand("spawncar", new Action<int, List<object>, string>(async (source, args, raw) =>
             {
                 // account for the argument not being passed
@@ -111,7 +115,7 @@ namespace PropHunt.Client.Library.Managers
 
             RegisterCommand("spawn", new Action<int, List<object>, string>((source, args, raw) =>
             {
-                _pluginInstance.SpawnPlayer(Game.PlayerPed.Position.X, Game.PlayerPed.Position.Y, Game.PlayerPed.Position.Z);
+                this._parentInstance.SpawnManager_SpawnPlayer(Game.PlayerPed.Position.X, Game.PlayerPed.Position.Y, Game.PlayerPed.Position.Z);
             }), false);
 
             RegisterCommand("testsize", new Action<int, List<object>, string>((source, args, raw) =>
@@ -119,7 +123,7 @@ namespace PropHunt.Client.Library.Managers
                 Vector3 entityDimensionsMinimum = default;
                 Vector3 entityDimensionsMaximum = default;
                 int targetEntityHandle = default;
-                
+
                 GetEntityPlayerIsFreeAimingAt(Game.Player.Handle, ref targetEntityHandle);
                 if (targetEntityHandle != default)
                 {

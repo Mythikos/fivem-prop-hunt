@@ -13,26 +13,27 @@ namespace PropHunt.Shared
         {
             public static class Client
             {
-                public const string ClientAction = "PropHunt:Events:Client:ClientAction";
-                public const string GameStateUpdate = "PropHunt:Events:Client:GameStateUpdate";
-                public const string SyncGameManager = "PropHunt:Events:Client:SyncGameManager";
-                public const string SyncTimeAndWeather = "PropHunt:Events:Client:SyncTimeAndWeather";
+                public static readonly string ClientAction = Guid.NewGuid().ToString();
+                public static readonly string OnRoundStateChanged = Guid.NewGuid().ToString();
+                public static readonly string OnRoundSync = Guid.NewGuid().ToString();
+                public static readonly string SyncTimeAndWeather = Guid.NewGuid().ToString();
 
                 public static class Actions
                 {
-                    public const string Kill = "PropHunt:Events:Client:Action:Kill";
-                    public const string Spawn = "PropHunt:Events:Client:Action:Spawn";
+                    public static readonly string Kill = Guid.NewGuid().ToString();
+                    public static readonly string Spawn = Guid.NewGuid().ToString();
                 }
             }
 
             public static class Server
             {
-                public const string ServerAction = "PropHunt:Events:Server:ServerAction";
-                public const string PlayerInitialSpawn = "PropHunt:Events:Server:PlayerInitialSpawn";
-                public const string PlayerSpawn = "PropHunt:Events:Server:PlayerSpawn";
+                public static readonly string ServerAction = Guid.NewGuid().ToString();
+                public static readonly string OnPlayerInitialSpawn = Guid.NewGuid().ToString();
+                public static readonly string OnPlayerSpawn = Guid.NewGuid().ToString();
 
                 public static class Actions
                 {
+                    
                 }
             }
 
@@ -40,9 +41,9 @@ namespace PropHunt.Shared
 
         public static class StateBagKeys
         {
-            public const string PlayerState = "PropHunt:StateBagKeys:PlayerState";
-            public const string PlayerPropHandle = "PropHunt:StateBagKeys:PlayerPropHandle";
-            public const string PlayerInitialSpawn = "PropHunt:StateBagKeys:PlayerInitialSpawn";
+            public static readonly string PlayerTeam = Guid.NewGuid().ToString();
+            public static readonly string PlayerPropHandle = Guid.NewGuid().ToString();
+            public static readonly string PlayerInitialSpawn = Guid.NewGuid().ToString();
         }
     }
 }

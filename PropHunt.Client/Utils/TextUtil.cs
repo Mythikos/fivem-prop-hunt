@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using static CitizenFX.Core.Native.API;
 
-namespace PropHunt.Client.Library.Utils
+namespace PropHunt.Client.Utils
 {
     internal static class TextUtil
     {
@@ -52,7 +52,7 @@ namespace PropHunt.Client.Library.Utils
                     break;
             }
 
-            PropHunt.TriggerEvent("chat:addMessage", new { color = color, args = new[] { "[PropHunt]", message } });
+            cl_Init.TriggerEvent("chat:addMessage", new { color = color, args = new[] { "[PropHunt]", message } });
         }
     }
 }

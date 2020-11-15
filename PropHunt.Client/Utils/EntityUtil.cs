@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using static CitizenFX.Core.Native.API;
 
-namespace PropHunt.Client.Library.Utils
+namespace PropHunt.Client.Utils
 {
     internal static class EntityUtil
     {
