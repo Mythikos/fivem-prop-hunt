@@ -62,19 +62,14 @@ namespace PropHunt.Server
                     }
 
                     //
-                    // Determine weather and time for round
-                    int weatherState = Enum.GetValues(typeof(WeatherStates)).Random<int>();
-                    int timeState = Enum.GetValues(typeof(TimeOfDayStates)).Random<int>();
-
-                    //
                     // Trigger game state change event
-                    sv_Init.TriggerClientEvent(Constants.Events.Client.SyncTimeAndWeather, timeState, weatherState);
+                    this._parentInstance.Environment.RandomizeWeatherAndTime();
                     sv_Init.TriggerClientEvent(Constants.Events.Client.OnRoundStateChanged, (int)GameStates.PreRound);
 
                     //
                     // Update state
                     this.State = GameStates.PreRound;
-                    this.TimeRemainingInSeconds = 15;
+                    this.TimeRemainingInSeconds = 3;// 15;
                     Debug.WriteLine($"GameState: {this.State}");
                 }
             }
@@ -90,7 +85,7 @@ namespace PropHunt.Server
                     //
                     // Update state
                     this.State = GameStates.Hiding;
-                    this.TimeRemainingInSeconds = 60;
+                    this.TimeRemainingInSeconds = 3;// 60;
                     Debug.WriteLine($"GameState: {this.State}");
                 }
             }
@@ -107,7 +102,7 @@ namespace PropHunt.Server
                     //
                     // Update state
                     this.State = GameStates.Hunting;
-                    this.TimeRemainingInSeconds = 300;
+                    this.TimeRemainingInSeconds = 600;// 300;
                     Debug.WriteLine($"GameState: {this.State}");
                 }
             }
@@ -125,7 +120,7 @@ namespace PropHunt.Server
                     //
                     // Update state
                     this.State = GameStates.PostRound;
-                    this.TimeRemainingInSeconds = 30;
+                    this.TimeRemainingInSeconds = 3;// 30;
                     Debug.WriteLine($"GameState: {this.State}");
                 }
             }

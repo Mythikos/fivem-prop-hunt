@@ -16,7 +16,10 @@ namespace PropHunt.Shared
                 public static readonly string ClientAction = "42b19234c24946b99784d72fc8daac31";
                 public static readonly string OnRoundStateChanged = "5abd03b79b3442f594ad96d83e8641fd";
                 public static readonly string OnRoundSync = "0ffeec9c62804ff6b146dc7289fc044a";
-                public static readonly string SyncTimeAndWeather = "3bc0ca4f9f7148b4a2411c1c26e3a3c6";
+
+                public static readonly string OnEnvironmentTimeChanged = "a5b27550766741c892fbf3c769e1353f";
+                public static readonly string OnEnvironmentWeatherChanged = "31b74599a1024e56a1879e16b0f83bf4";
+                public static readonly string OnEnvironmentWeatherAndTimeChanged = "864e944976ac45f9b81124d7a4167671";
 
                 public static class Actions
                 {

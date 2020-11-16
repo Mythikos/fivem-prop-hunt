@@ -104,22 +104,25 @@ namespace PropHunt.Client
             cl_Init.TriggerServerEvent(Constants.Events.Server.OnPlayerSpawn, Game.Player.ServerId);
         }
 
-        public void OnPlayerDied([FromSource] Player player, int killerType) // CHECK: Changed killerType from string to int
+        /// <summary>
+        /// Seems to fire if the player was dealt indirect damage
+        /// </summary>
+        /// <param name="player"></param>
+        /// <param name="killerType"></param>
+        public void OnPlayerDied([FromSource] Player player, int killerType)
         {
             Game.Player.State.Set<PlayerTeams>(Constants.StateBagKeys.PlayerTeam, PlayerTeams.Unassigned, true);
-            TextUtil.SendChatMessage("OnPlayerDied");
         }
 
-        public void OnPlayerKilled([FromSource] Player player, int killerId, List<dynamic> args)
+        /// <summary>
+        /// Appears to fire if the palyer had a direct attacker and the attacker is known
+        /// </summary>
+        /// <param name="player"></param>
+        /// <param name="killerId"></param>
+        /// <param name="args"></param>
+        public void OnPlayerKilled([FromSource] Player player, int killerId, dynamic args)
         {
             Game.Player.State.Set<PlayerTeams>(Constants.StateBagKeys.PlayerTeam, PlayerTeams.Unassigned, true);
-            TextUtil.SendChatMessage("OnPlayerKilled");
-        }
-
-        public void OnPlayerWasted([FromSource] Player player, string deathReason)
-        {
-            Game.Player.State.Set<PlayerTeams>(Constants.StateBagKeys.PlayerTeam, PlayerTeams.Unassigned, true);
-            TextUtil.SendChatMessage("OnPlayerWasted");
         }
         #endregion
 

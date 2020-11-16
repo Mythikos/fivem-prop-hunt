@@ -17,6 +17,7 @@ namespace PropHunt.Server
     {
         internal sv_Rounds Rounds { get; private set; }
         internal sv_Player Player { get; private set; }
+        internal sv_Environment Environment { get; private set; }
 
         public sv_Init()
         {
@@ -26,6 +27,7 @@ namespace PropHunt.Server
                 // Initialize server elements
                 this.Rounds = new sv_Rounds(this);
                 this.Player = new sv_Player(this);
+                this.Environment = new sv_Environment(this);
 
                 //
                 // Subscribe to events
@@ -36,7 +38,7 @@ namespace PropHunt.Server
 
                 Debug.WriteLine("PropHunt.Server was loaded successfully");
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Debug.WriteLine($"PropHunt.Server failed to load: {ex.Message}");
             }

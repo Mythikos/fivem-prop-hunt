@@ -54,6 +54,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="cl_Commands.cs" />
+    <Compile Include="cl_Environment.cs" />
     <Compile Include="cl_Rounds.cs" />
     <Compile Include="cl_Player.cs" />
     <Compile Include="Extensions\StateBagExt.cs" />

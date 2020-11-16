@@ -42,6 +42,7 @@ namespace PropHunt.Client
     {
         internal cl_Rounds Rounds { get; private set; }
         internal cl_Player Player { get; private set; }
+        internal cl_Environment Environment { get; private set; }
         internal cl_Commands Commands { get; private set; }
 
         public cl_Init()
@@ -52,6 +53,7 @@ namespace PropHunt.Client
                 // Initialize client elements
                 this.Rounds = new cl_Rounds(this);
                 this.Player = new cl_Player(this);
+                this.Environment = new cl_Environment(this);
                 this.Commands = new cl_Commands(this);
 
                 //
@@ -61,12 +63,13 @@ namespace PropHunt.Client
                 this.Tick += this.Player.OnTick;
                 this.EventHandlers.Add("playerSpawned", new Action(this.Player.OnPlayerSpawned));
                 this.EventHandlers.Add("baseevents:onPlayerDied", new Action<Player, int>(this.Player.OnPlayerDied));
-                this.EventHandlers.Add("baseevents:onPlayerKilled", new Action<Player, int, List<dynamic>>(this.Player.OnPlayerKilled));
-                this.EventHandlers.Add("baseevents:onPlayerWasted", new Action<Player, string>(this.Player.OnPlayerWasted));
+                this.EventHandlers.Add("baseevents:onPlayerKilled", new Action<Player, int, dynamic>(this.Player.OnPlayerKilled));
                 this.EventHandlers.Add("gameEventTriggered", new Action<string, List<dynamic>>(OnGameEventTriggered));
                 this.EventHandlers.Add(Constants.Events.Client.OnRoundSync, new Action<int, float>(this.Rounds.OnSync));
                 this.EventHandlers.Add(Constants.Events.Client.OnRoundStateChanged, new Action<int>(this.Rounds.OnStateChanged));
-                this.EventHandlers.Add(Constants.Events.Client.SyncTimeAndWeather, new Action<int, int>(OnSyncTimeAndWeather));
+                this.EventHandlers.Add(Constants.Events.Client.OnEnvironmentTimeChanged, new Action<int>(this.Environment.OnTimeChanged));
+                this.EventHandlers.Add(Constants.Events.Client.OnEnvironmentWeatherChanged, new Action<int>(this.Environment.OnWeatherChanged));
+                this.EventHandlers.Add(Constants.Events.Client.OnEnvironmentWeatherAndTimeChanged, new Action<int, int>(this.Environment.OnWeatherAndTimeChanged));
                 this.EventHandlers.Add(Constants.Events.Client.ClientAction, new Action<string>(OnClientAction));
 
                 Debug.WriteLine($"PropHunt.Client was loaded successfully.");
@@ -215,20 +218,6 @@ namespace PropHunt.Client
                     }
                 }
             }
-        }
-
-        public void OnSyncTimeAndWeather(int timeState, int weatherState)
-        {
-            WeatherStates weatherStateEnum = (WeatherStates)weatherState;
-            TimeOfDayStates timeStateEnum = (TimeOfDayStates)timeState;
-
-            SetWeatherTypePersist(weatherStateEnum.GetAttribute<NativeValueString>().NativeValue);
-            SetWeatherTypeNowPersist(weatherStateEnum.GetAttribute<NativeValueString>().NativeValue);
-            SetWeatherTypeNow(weatherStateEnum.GetAttribute<NativeValueString>().NativeValue);
-            SetOverrideWeather(weatherStateEnum.GetAttribute<NativeValueString>().NativeValue);
-            SetForcePedFootstepsTracks(false);
-            SetForceVehicleTrails(false);
-            NetworkOverrideClockTime(timeStateEnum.GetAttribute<NativeValueInt>().NativeValue, 0, 0);
         }
 
         public void OnClientAction(string action)
