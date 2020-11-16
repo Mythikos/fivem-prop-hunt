@@ -21,6 +21,10 @@ namespace PropHunt.Shared
                 public static readonly string OnEnvironmentWeatherChanged = "31b74599a1024e56a1879e16b0f83bf4";
                 public static readonly string OnEnvironmentWeatherAndTimeChanged = "864e944976ac45f9b81124d7a4167671";
 
+                public static readonly string OnAudioPlayFromPlayer = "0ba8e3580d3941859fac3cbcd775baa3";
+                public static readonly string OnAudioPlayFromPosition = "3ec525f5811549248440c36d22712384";
+                public static readonly string OnAudioPlay = "542f69c47c53427dbf9f227784b4aa5f";
+
                 public static class Actions
                 {
                     public static readonly string Kill = "a493fb7f772b46a9b21c2d22417c64bf";
@@ -47,6 +51,12 @@ namespace PropHunt.Shared
             public static readonly string PlayerTeam = "2bf609234e7f465eb686a7958f97898c";
             public static readonly string PlayerPropHandle = "6356fdac4d5448e592fa07c0542718e4";
             public static readonly string PlayerInitialSpawn = "9a57e095a6204e11b9fdaaf2aee8f6c7";
+
+            public static readonly string TauntLastPositionX = "293cbf21a1ca47d990ace47a75280d21";
+            public static readonly string TauntLastPositionY = "3db612de10014e79b46f7594ae6c01ec";
+            public static readonly string TauntLastPositionZ = "3b94de9a648f454aa198352ed9d6491d";
+            public static readonly string TauntLastTime = "d722c4a5eae24ed89086995189069f8f";
+
         }
     }
 }

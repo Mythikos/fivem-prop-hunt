@@ -57,6 +57,7 @@
     <Compile Include="cl_Environment.cs" />
     <Compile Include="cl_Rounds.cs" />
     <Compile Include="cl_Player.cs" />
+    <Compile Include="cl_Audio.cs" />
     <Compile Include="Extensions\StateBagExt.cs" />
     <Compile Include="Utils\EntityUtil.cs" />
     <Compile Include="Utils\TextUtil.cs" />

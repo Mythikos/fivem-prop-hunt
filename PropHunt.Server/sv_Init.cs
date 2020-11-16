@@ -1,6 +1,6 @@
 ﻿using CitizenFX.Core;
 using CitizenFX.Core.Native;
-using PropHunt.Server.Library.Extensions;
+using PropHunt.Server.Extensions;
 using PropHunt.Shared.Enumerations;
 using System;
 using System.Collections.Generic;
@@ -18,6 +18,7 @@ namespace PropHunt.Server
         internal sv_Rounds Rounds { get; private set; }
         internal sv_Player Player { get; private set; }
         internal sv_Environment Environment { get; private set; }
+        internal sv_Audio Audio { get; private set; }
 
         public sv_Init()
         {
@@ -28,6 +29,7 @@ namespace PropHunt.Server
                 this.Rounds = new sv_Rounds(this);
                 this.Player = new sv_Player(this);
                 this.Environment = new sv_Environment(this);
+                this.Audio = new sv_Audio(this);
 
                 //
                 // Subscribe to events

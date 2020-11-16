@@ -20,21 +20,12 @@ using PropHunt.Shared.Extensions;
 ///     1593 3219 40 is a good position
 /// 
 /// TODO:
-///     X Props need to have limits of what they can and can't become. Both by type (ped vs prop vs car) and size.
 ///     Need to add locations or "sections" of the map to play on
-///     X Remove attached props from player during round reset
-///     X Based prop player health on dimensions of prop / disable auto health regeneration
 ///     When hunters are blinded, weapon wheel removes blind. Need to disable weapon wheel until round is Hunting
 ///     When the attached prop breaks, the player needs to die
-///     X Player's are freely respawning during the game
-///     X Player's stamina should be set to 100% permanently 
 ///     Prop rotation replication is not working
 ///     Add blip above player's heads that are on the same team
 ///     Add sound taunting mechanic if player is stationary for over 60 seconds, every 60 seconds
-///     OnPlayerDied hook seems to be pretty irregular
-/// 
-///     TEST THE PLAYER KILLED, DIED, WASTED EVENTS AND WHEN THEY ARE CALLED. DIED IS INCONSISTENT, APPEARS TO BE BECAUSE DIED AND KILLED ARE IN AN ELSE STATEMENT - ONLY 
-///     ONE CAN BE CALLED AT A TIME. WATED APPEARS TO BE ALWAYS CALLED IF THE PLAYER DIED.
 /// </summary>
 namespace PropHunt.Client
 {
@@ -43,6 +34,7 @@ namespace PropHunt.Client
         internal cl_Rounds Rounds { get; private set; }
         internal cl_Player Player { get; private set; }
         internal cl_Environment Environment { get; private set; }
+        internal cl_Audio Audio { get; private set; }
         internal cl_Commands Commands { get; private set; }
 
         public cl_Init()
@@ -54,6 +46,7 @@ namespace PropHunt.Client
                 this.Rounds = new cl_Rounds(this);
                 this.Player = new cl_Player(this);
                 this.Environment = new cl_Environment(this);
+                this.Audio = new cl_Audio(this);
                 this.Commands = new cl_Commands(this);
 
                 //
@@ -65,11 +58,18 @@ namespace PropHunt.Client
                 this.EventHandlers.Add("baseevents:onPlayerDied", new Action<Player, int>(this.Player.OnPlayerDied));
                 this.EventHandlers.Add("baseevents:onPlayerKilled", new Action<Player, int, dynamic>(this.Player.OnPlayerKilled));
                 this.EventHandlers.Add("gameEventTriggered", new Action<string, List<dynamic>>(OnGameEventTriggered));
+
                 this.EventHandlers.Add(Constants.Events.Client.OnRoundSync, new Action<int, float>(this.Rounds.OnSync));
                 this.EventHandlers.Add(Constants.Events.Client.OnRoundStateChanged, new Action<int>(this.Rounds.OnStateChanged));
+
                 this.EventHandlers.Add(Constants.Events.Client.OnEnvironmentTimeChanged, new Action<int>(this.Environment.OnTimeChanged));
                 this.EventHandlers.Add(Constants.Events.Client.OnEnvironmentWeatherChanged, new Action<int>(this.Environment.OnWeatherChanged));
                 this.EventHandlers.Add(Constants.Events.Client.OnEnvironmentWeatherAndTimeChanged, new Action<int, int>(this.Environment.OnWeatherAndTimeChanged));
+
+                this.EventHandlers.Add(Constants.Events.Client.OnAudioPlay, new Action<string, string>(this.Audio.Play));
+                this.EventHandlers.Add(Constants.Events.Client.OnAudioPlayFromPlayer, new Action<string, string>(this.Audio.PlayFromPlayer));
+                this.EventHandlers.Add(Constants.Events.Client.OnAudioPlayFromPosition, new Action<float, float, float, string, string>(this.Audio.PlayFromPosition));
+
                 this.EventHandlers.Add(Constants.Events.Client.ClientAction, new Action<string>(OnClientAction));
 
                 Debug.WriteLine($"PropHunt.Client was loaded successfully.");

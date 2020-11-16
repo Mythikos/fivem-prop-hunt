@@ -8,14 +8,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using static CitizenFX.Core.Native.API;
-using PropHunt.Server.Library.Extensions;
+using PropHunt.Server.Extensions;
 
 namespace PropHunt.Server
 {
     internal class sv_Rounds
     {
         #region Instance Variables / Properties
-        private const float TIMER_UPDATE_INTERVAL = 250;
+        private const float TIMER_UPDATE_INTERVAL = 250f;
 
         private sv_Init _parentInstance;
         private System.Threading.Timer _updateGameStateTimer;

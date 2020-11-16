@@ -1,7 +1,7 @@
 ﻿using System;
 using CitizenFX.Core;
 
-namespace PropHunt.Server.Library.Extensions
+namespace PropHunt.Server.Extensions
 {
     /// <summary>
     /// State bag extensions. 
@@ -33,7 +33,10 @@ namespace PropHunt.Server.Library.Extensions
             }
             else
             {
-                return bag.Get(key);
+                if (value == null)
+                    return default(T);
+                else
+                    return (T)bag.Get(key);
             }
         }
     }

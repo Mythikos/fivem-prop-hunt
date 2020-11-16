@@ -33,7 +33,10 @@ namespace PropHunt.Client.Extensions
             }
             else
             {
-                return bag.Get(key);
+                if (value == null)
+                    return default(T);
+                else
+                    return (T)bag.Get(key);
             }
         }
     }

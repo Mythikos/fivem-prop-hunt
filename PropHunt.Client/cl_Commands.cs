@@ -118,22 +118,9 @@ namespace PropHunt.Client
                 this._parentInstance.SpawnManager_SpawnPlayer(Game.PlayerPed.Position.X, Game.PlayerPed.Position.Y, Game.PlayerPed.Position.Z);
             }), false);
 
-            RegisterCommand("testsize", new Action<int, List<object>, string>((source, args, raw) =>
+            RegisterCommand("audio", new Action<int, List<object>, string>((source, args, raw) =>
             {
-                Vector3 entityDimensionsMinimum = default;
-                Vector3 entityDimensionsMaximum = default;
-                int targetEntityHandle = default;
-
-                GetEntityPlayerIsFreeAimingAt(Game.Player.Handle, ref targetEntityHandle);
-                if (targetEntityHandle != default)
-                {
-                    GetModelDimensions((uint)GetEntityModel(targetEntityHandle), ref entityDimensionsMinimum, ref entityDimensionsMaximum);
-                    var length = Math.Abs(entityDimensionsMaximum.X - entityDimensionsMinimum.X);
-                    var width = Math.Abs(entityDimensionsMaximum.Y - entityDimensionsMinimum.Y);
-                    var height = Math.Abs(entityDimensionsMaximum.Z - entityDimensionsMinimum.Z);
-                    var size = length * width * height;
-                    TextUtil.SendChatMessage($"Entity ({targetEntityHandle}) is of size {size}");
-                }
+                this._parentInstance.Audio.PlayFromPlayer(args[0].ToString(), args[1].ToString());
             }), false);
         }
     }
