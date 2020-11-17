@@ -45,6 +45,7 @@
     <Compile Include="Attributes\NativeValueInt.cs" />
     <Compile Include="Attributes\NativeValueString.cs" />
     <Compile Include="Constants.cs" />
+    <Compile Include="Enumerations\GamerTagComponents.cs" />
     <Compile Include="Enumerations\GameStates.cs" />
     <Compile Include="Enumerations\PlayerTeams.cs" />
     <Compile Include="Enumerations\TimeOfDayStates.cs" />

@@ -8,8 +8,9 @@ namespace PropHunt.Shared.Enumerations
 {
     public enum PlayerTeams
     {
-        Unassigned,
+        //Unassigned,
         Hunter,
-        Prop
+        Prop,
+        Spectator
     }
 }

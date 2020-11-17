@@ -25,7 +25,6 @@ using PropHunt.Shared.Extensions;
 ///     When the attached prop breaks, the player needs to die
 ///     Prop rotation replication is not working
 ///     Add blip above player's heads that are on the same team
-///     Add sound taunting mechanic if player is stationary for over 60 seconds, every 60 seconds
 /// </summary>
 namespace PropHunt.Client
 {
@@ -52,8 +51,12 @@ namespace PropHunt.Client
                 //
                 // Subscribe to events
                 this.Tick += OnTick;
+                this.Tick += GcTick;
                 this.Tick += this.Rounds.OnTick;
                 this.Tick += this.Player.OnTick;
+                this.Tick += this.Player.OnTick_DrawGamerTags;
+                this.Tick += this.Player.OnTick_DrawComponents;
+
                 this.EventHandlers.Add("playerSpawned", new Action(this.Player.OnPlayerSpawned));
                 this.EventHandlers.Add("baseevents:onPlayerDied", new Action<Player, int>(this.Player.OnPlayerDied));
                 this.EventHandlers.Add("baseevents:onPlayerKilled", new Action<Player, int, dynamic>(this.Player.OnPlayerKilled));
@@ -85,13 +88,12 @@ namespace PropHunt.Client
         {
             //
             // Draw debugging
-            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.1f), $"Player State: {Game.Player.State.Get<PlayerTeams>(Constants.StateBagKeys.PlayerTeam)}");
+            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.0f), $"SID: {Game.Player.ServerId} - Handle: {Game.Player.Handle}");
+            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.1f), $"Player Team: {Game.Player.State.Get<PlayerTeams>(Constants.StateBagKeys.PlayerTeam)}");
             TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.2f), $"Player Initial Spawn: {Game.Player.State.Get(Constants.StateBagKeys.PlayerInitialSpawn)}");
             TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.3f), $"Player IsInvincible: {Game.PlayerPed.IsInvincible}");
-            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.4f), $"Player Health: {Game.PlayerPed.HealthFloat}");
-            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.5f), $"Player Armor: {Game.PlayerPed.ArmorFloat}");
-            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.6f), $"Time Remaining: {this.Rounds.TimeRemainingInSeconds}");
-            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.7f), $"Game State: {this.Rounds.GameState}");
+            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.4f), $"Time Remaining: {this.Rounds.TimeRemainingInSeconds}");
+            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.5f), $"Game State: {this.Rounds.GameState}");
         }
 
         private void OnGameEventTriggered(string name, List<dynamic> args)
@@ -261,6 +263,24 @@ namespace PropHunt.Client
             SpawnManager_SetAutoSpawnCallback(this.Exports["spawnmanager"].spawnPlayer(spawnInfo));
             SpawnManager_SetAutoSpawn(false);
             SpawnManager_ForceRespawn();
+        }
+        #endregion
+
+        #region gc thread
+        /// <summary>
+        /// Task for clearing unused memory periodically.
+        /// </summary>
+        /// <returns></returns>
+        int gcTickTimer = GetGameTimer();
+        private async Task GcTick()
+        {
+            if (GetGameTimer() - gcTickTimer > 60000)
+            {
+                gcTickTimer = GetGameTimer();
+                GC.Collect();
+            }
+
+            await Delay(1000);
         }
         #endregion
     }

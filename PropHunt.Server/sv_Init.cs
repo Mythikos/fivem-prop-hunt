@@ -35,8 +35,6 @@ namespace PropHunt.Server
                 // Subscribe to events
                 this.EventHandlers["playerConnecting"] += new Action<Player, string, dynamic, dynamic>(OnPlayerConnecting);
                 this.EventHandlers["playerDropped"] += new Action<Player, string>(OnPlayerDisconnected);
-                this.EventHandlers[Constants.Events.Server.OnPlayerInitialSpawn] += new Action<int>(this.Player.OnPlayerInitialSpawn);
-                this.EventHandlers[Constants.Events.Server.OnPlayerSpawn] += new Action<int>(this.Player.OnPlayerSpawn);
 
                 Debug.WriteLine("PropHunt.Server was loaded successfully");
             }

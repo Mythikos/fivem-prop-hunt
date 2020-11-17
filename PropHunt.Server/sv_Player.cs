@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using PropHunt.Shared.Extensions;
+using static CitizenFX.Core.Native.API;
 
 namespace PropHunt.Server
 {
@@ -38,6 +39,7 @@ namespace PropHunt.Server
         }
 
         #region Events
+        [EventHandler(Constants.Events.Server.OnPlayerInitialSpawn)]
         public void OnPlayerInitialSpawn(int playerServerId)
         {
             Player player;
@@ -46,12 +48,11 @@ namespace PropHunt.Server
             if (player != null)
             {
                 if (this._parentInstance.Rounds.State == GameStates.Hiding || this._parentInstance.Rounds.State == GameStates.Hunting)
-                    sv_Init.TriggerClientEvent(player, Constants.Events.Client.ClientAction, Constants.Events.Client.Actions.Kill);
-
-                Debug.WriteLine($"OnPlayerInitialSpawn: {player.Name}");
+                    sv_Init.TriggerClientEvent(player, Constants.Events.Client.Kill);
             }
         }
 
+        [EventHandler(Constants.Events.Server.OnPlayerSpawn)]
         public void OnPlayerSpawn(int playerServerId)
         {
             Player player;
@@ -59,8 +60,24 @@ namespace PropHunt.Server
             player = this._parentInstance.Rounds.AllPlayers[playerServerId];
             if (player != null)
             {
-                Debug.WriteLine($"OnPlayerSpawn: {player.Name}");
+
             }
+        }
+
+        [EventHandler(Constants.Events.Server.GetPlayerCoords)]
+        private void GetPlayerCoords([FromSource] Player source, int playerId, NetworkCallbackDelegate callback)
+        {
+            if (IsPlayerAceAllowed(source.Handle, "vMenu.OnlinePlayers.Teleport") || IsPlayerAceAllowed(source.Handle, "vMenu.Everything") ||
+                IsPlayerAceAllowed(source.Handle, "vMenu.OnlinePlayers.All"))
+            {
+                var coords = new PlayerList[playerId]?.Character?.Position ?? Vector3.Zero;
+
+                _ = callback(coords);
+
+                return;
+            }
+
+            _ = callback(Vector3.Zero);
         }
         #endregion
 
@@ -98,16 +115,16 @@ namespace PropHunt.Server
 
                         tauntTime = player.State.Get<long>(Constants.StateBagKeys.TauntLastTime);
                         if (tauntTime == default) // Handle initial assignment
-                            tauntTime = DateTimeOffset.Now.ToUnixTimeSeconds();
+                            tauntTime = GetGameTimer();
 
                         if (currentX != lastX || currentY != lastY || currentZ != lastZ)
-                            tauntTime = DateTimeOffset.Now.ToUnixTimeSeconds();
+                            tauntTime = GetGameTimer();
 
-                        if (DateTimeOffset.UtcNow.ToUnixTimeSeconds() - 30 > tauntTime)
+                        if (GetGameTimer() - 30 > tauntTime)
                         {
                             selectedTaunt = _tauntSounds.Random();
                             this._parentInstance.Audio.PlayFromPlayer(player, selectedTaunt.Value, selectedTaunt.Key);
-                            tauntTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                            tauntTime = GetGameTimer();
                         }
 
                         player.State.Set<long>(Constants.StateBagKeys.TauntLastTime, tauntTime, false); // Dont replicate to client, no need

@@ -69,7 +69,7 @@ namespace PropHunt.Server
                     //
                     // Update state
                     this.State = GameStates.PreRound;
-                    this.TimeRemainingInSeconds = 3;// 15;
+                    this.TimeRemainingInSeconds = 15;
                     Debug.WriteLine($"GameState: {this.State}");
                 }
             }
@@ -85,7 +85,7 @@ namespace PropHunt.Server
                     //
                     // Update state
                     this.State = GameStates.Hiding;
-                    this.TimeRemainingInSeconds = 3;// 60;
+                    this.TimeRemainingInSeconds = 60;
                     Debug.WriteLine($"GameState: {this.State}");
                 }
             }
@@ -102,7 +102,7 @@ namespace PropHunt.Server
                     //
                     // Update state
                     this.State = GameStates.Hunting;
-                    this.TimeRemainingInSeconds = 600;// 300;
+                    this.TimeRemainingInSeconds = 300;
                     Debug.WriteLine($"GameState: {this.State}");
                 }
             }
@@ -120,7 +120,7 @@ namespace PropHunt.Server
                     //
                     // Update state
                     this.State = GameStates.PostRound;
-                    this.TimeRemainingInSeconds = 3;// 30;
+                    this.TimeRemainingInSeconds = 30;
                     Debug.WriteLine($"GameState: {this.State}");
                 }
             }

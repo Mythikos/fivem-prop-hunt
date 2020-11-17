@@ -118,9 +118,20 @@ namespace PropHunt.Client
                 this._parentInstance.SpawnManager_SpawnPlayer(Game.PlayerPed.Position.X, Game.PlayerPed.Position.Y, Game.PlayerPed.Position.Z);
             }), false);
 
-            RegisterCommand("audio", new Action<int, List<object>, string>((source, args, raw) =>
+            //
+            // Test commands
+            RegisterCommand("test.audio", new Action<int, List<object>, string>((source, args, raw) =>
             {
                 this._parentInstance.Audio.PlayFromPlayer(args[0].ToString(), args[1].ToString());
+            }), false);
+
+            RegisterCommand("test.notifications", new Action<int, List<object>, string>((source, args, raw) =>
+            {
+                NotificationsUtil.Custom(args[0].ToString(), true, true);
+                NotificationsUtil.Alert(args[0].ToString(), true, true);
+                NotificationsUtil.Error(args[0].ToString(), true, true);
+                NotificationsUtil.Info(args[0].ToString(), true, true);
+                NotificationsUtil.Success(args[0].ToString(), true, true);
             }), false);
         }
     }

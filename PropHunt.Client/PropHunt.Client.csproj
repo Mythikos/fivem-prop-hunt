@@ -60,6 +60,8 @@
     <Compile Include="cl_Audio.cs" />
     <Compile Include="Extensions\StateBagExt.cs" />
     <Compile Include="Utils\EntityUtil.cs" />
+    <Compile Include="Utils\NotificationsUtil.cs" />
+    <Compile Include="Utils\PlayerUtil.cs" />
     <Compile Include="Utils\TextUtil.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="cl_Init.cs" />

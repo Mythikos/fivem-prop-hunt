@@ -11,6 +11,8 @@ using PropHunt.Client.Extensions;
 using PropHunt.Client.Utils;
 using static CitizenFX.Core.Native.API;
 using CitizenFX.Core.UI;
+using PropHunt.Shared.Extensions;
+using PropHunt.Shared.Attributes;
 
 namespace PropHunt.Client
 {
@@ -21,6 +23,8 @@ namespace PropHunt.Client
         private const int HEALTH_MIN = 1;
 
         private cl_Init _parentInstance;
+        private Dictionary<Player, int> _playerTags;
+        private int _currentlySpectatingPlayer = -1;
         #endregion
 
         public cl_Player(cl_Init parentInstance)
@@ -29,28 +33,91 @@ namespace PropHunt.Client
                 throw new ArgumentNullException("parentInstance");
 
             this._parentInstance = parentInstance;
+            this._playerTags = new Dictionary<Player, int>();
 
             this.Reset();
             Game.Player.State.Set(Constants.StateBagKeys.PlayerPropHandle, null, true);
             Game.Player.State.Set(Constants.StateBagKeys.PlayerInitialSpawn, true, true);
-            Game.Player.State.Set<PlayerTeams>(Constants.StateBagKeys.PlayerTeam, PlayerTeams.Unassigned, true);
+            Game.Player.State.Set<PlayerTeams>(Constants.StateBagKeys.PlayerTeam, PlayerTeams.Spectator, true);
         }
 
         #region Events
         public async Task OnTick()
         {
-            PlayerTeams playerState;
-
             SetPlayerHealthRechargeMultiplier(Game.Player.Handle, 0f);
             RestorePlayerStamina(Game.Player.Handle, 1f);
+        }
 
+        public async Task OnTick_DrawGamerTags()
+        {
+            float distance;
+            bool canSee;
+            PlayerTeams playerTeam;
+            PlayerList playerList;
+            PlayerTeams localPlayerTeam;
+
+            localPlayerTeam = Game.Player.State.Get<PlayerTeams>(Constants.StateBagKeys.PlayerTeam);
+            playerList = new PlayerList();
+
+            foreach (Player player in playerList)
+            {
+                if (player != null)// && !player.Equals(Game.Player))
+                {
+                    // Get vars 
+                    playerTeam = player.State.Get<PlayerTeams>(Constants.StateBagKeys.PlayerTeam);
+                    distance = GetDistanceBetweenCoords(player.Character.Position.X, player.Character.Position.Y, player.Character.Position.Z, Game.Player.Character.Position.X, Game.Player.Character.Position.Y, Game.Player.Character.Position.Z, true);
+                    canSee = distance < 250 && HasEntityClearLosToEntity(Game.Player.Character.Handle, player.Character.Handle, 17) && (localPlayerTeam.Equals(playerTeam) || localPlayerTeam != PlayerTeams.Hunter);
+
+                    // Handle tag visible state
+                    if (this._playerTags.ContainsKey(player))
+                    {
+                        if (!canSee)
+                        {
+                            RemoveMpGamerTag(this._playerTags[player]);
+                            this._playerTags.Remove(player);
+                        }
+                        else
+                        {
+                            this._playerTags[player] = CreateMpGamerTag(player.Character.Handle, player.Name, false, false, string.Empty, 0);
+                        }
+                    }
+                    else if (canSee)
+                    {
+                        this._playerTags.Add(player, CreateMpGamerTag(player.Character.Handle, player.Name, false, false, string.Empty, 0));
+                    }
+
+                    // Display the tag if we are of the right team and within the right distance
+                    if (canSee && this._playerTags.ContainsKey(player))
+                    {
+                        SetMpGamerTagVisibility(this._playerTags[player], GamerTagComponents.GamerName.GetAttribute<NativeValueInt>().NativeValue, true);
+                        SetMpGamerTagVisibility(this._playerTags[player], GamerTagComponents.HealthAndArmor.GetAttribute<NativeValueInt>().NativeValue, true);
+                        SetMpGamerTagVisibility(this._playerTags[player], GamerTagComponents.AudioIcon.GetAttribute<NativeValueInt>().NativeValue, NetworkIsPlayerTalking(player.Handle));
+
+                        SetMpGamerTagAlpha(this._playerTags[player], GamerTagComponents.GamerName.GetAttribute<NativeValueInt>().NativeValue, 255);
+                        SetMpGamerTagAlpha(this._playerTags[player], GamerTagComponents.HealthAndArmor.GetAttribute<NativeValueInt>().NativeValue, 255);
+                        SetMpGamerTagAlpha(this._playerTags[player], GamerTagComponents.AudioIcon.GetAttribute<NativeValueInt>().NativeValue, 255);
+
+                        if (playerTeam == PlayerTeams.Hunter)
+                            SetMpGamerTagColour(this._playerTags[player], GamerTagComponents.GamerName.GetAttribute<NativeValueInt>().NativeValue, 125);
+                        else
+                            SetMpGamerTagColour(this._playerTags[player], GamerTagComponents.GamerName.GetAttribute<NativeValueInt>().NativeValue, 0);
+                    }
+                }
+            }
+
+            // await Task.Delay(0);
+        }
+
+        public async Task OnTick_DrawComponents()
+        {
             //
             // Is it the right state
             if (this._parentInstance.Rounds.GameState == GameStates.Hiding || this._parentInstance.Rounds.GameState == GameStates.Hunting)
             {
+                var playerState = Game.Player.State.Get<PlayerTeams>(Constants.StateBagKeys.PlayerTeam);
+
                 //
                 // Handle hunter's view
-                playerState = Game.Player.State.Get<PlayerTeams>(Constants.StateBagKeys.PlayerTeam);
                 if (playerState == PlayerTeams.Hunter)
                 {
                     ShowHudComponentThisFrame((int)HudComponent.WeaponWheel);
@@ -89,6 +156,8 @@ namespace PropHunt.Client
                         SetPedCapsule(Game.Player.Character.Handle, 0.01f);
                 }
             }
+
+            //await Task.Delay(0);
         }
 
         public void OnPlayerSpawned()
@@ -112,7 +181,7 @@ namespace PropHunt.Client
         /// <param name="killerType"></param>
         public void OnPlayerDied([FromSource] Player player, int killerType)
         {
-            Game.Player.State.Set<PlayerTeams>(Constants.StateBagKeys.PlayerTeam, PlayerTeams.Unassigned, true);
+            Game.Player.State.Set<PlayerTeams>(Constants.StateBagKeys.PlayerTeam, PlayerTeams.Spectator, true);
         }
 
         /// <summary>
@@ -123,7 +192,111 @@ namespace PropHunt.Client
         /// <param name="args"></param>
         public void OnPlayerKilled([FromSource] Player player, int killerId, dynamic args)
         {
-            Game.Player.State.Set<PlayerTeams>(Constants.StateBagKeys.PlayerTeam, PlayerTeams.Unassigned, true);
+            Game.Player.State.Set<PlayerTeams>(Constants.StateBagKeys.PlayerTeam, PlayerTeams.Spectator, true);
+
+        }
+        #endregion
+
+        #region Teleport
+        public static async Task TeleportToPlayer(this Player player, bool inVehicle = false)
+        {
+            // If the player exists.
+            if (NetworkIsPlayerActive(player.Handle))
+            {
+                Vector3 playerPos;
+                bool wasActive = true;
+
+                if (NetworkIsPlayerActive(player.Handle))
+                {
+                    Ped playerPedObj = player.Character;
+                    if (Game.PlayerPed == playerPedObj)
+                    {
+                        NotificationsUtil.Error("Sorry, you can ~r~~h~not~h~ ~s~teleport to yourself!");
+                        return;
+                    }
+
+                    // Get the coords of the other player.
+                    playerPos = GetEntityCoords(playerPedObj.Handle, true);
+                }
+                else
+                {
+                    playerPos = await MainMenu.RequestPlayerCoordinates(player.ServerId);
+                    wasActive = false;
+                }
+
+                // Then await the proper loading/teleporting.
+                await TeleportToCoords(playerPos);
+
+                // Wait until the player has been created.
+                while (player.Character == null)
+                    await Task.Delay(0);
+
+                var playerId = player.Handle;
+                var playerPed = player.Character.Handle;
+
+                // If the player should be teleported inside the other player's vehcile.
+                if (inVehicle)
+                {
+                    // Wait until the target player vehicle has loaded, if they weren't active beforehand.
+                    if (!wasActive)
+                    {
+                        var startWait = GetGameTimer();
+
+                        while (!IsPedInAnyVehicle(playerPed, false))
+                        {
+                            await Task.Delay(0);
+
+                            if ((GetGameTimer() - startWait) > 1500)
+                            {
+                                break;
+                            }
+                        }
+                    }
+
+                    // Is the other player inside a vehicle?
+                    if (IsPedInAnyVehicle(playerPed, false))
+                    {
+                        // Get the vehicle of the specified player.
+                        Vehicle vehicle = GetVehicle(new Player(playerId), false);
+                        if (vehicle != null)
+                        {
+                            int totalVehicleSeats = GetVehicleModelNumberOfSeats(GetVehicleModel(vehicle: vehicle.Handle));
+
+                            // Does the vehicle exist? Is it NOT dead/broken? Are there enough vehicle seats empty?
+                            if (vehicle.Exists() && !vehicle.IsDead && IsAnyVehicleSeatEmpty(vehicle.Handle))
+                            {
+                                TaskWarpPedIntoVehicle(Game.PlayerPed.Handle, vehicle.Handle, (int)VehicleSeat.Any);
+                                Notify.Success("Teleported into ~g~<C>" + GetPlayerName(playerId) + "</C>'s ~s~vehicle.");
+                            }
+                            // If there are not enough empty vehicle seats or the vehicle doesn't exist/is dead then notify the user.
+                            else
+                            {
+                                // If there's only one seat on this vehicle, tell them that it's a one-seater.
+                                if (totalVehicleSeats == 1)
+                                {
+                                    Notify.Error("This vehicle only has room for 1 player!");
+                                }
+                                // Otherwise, tell them there's not enough empty seats remaining.
+                                else
+                                {
+                                    Notify.Error("Not enough empty vehicle seats remaining!");
+                                }
+                            }
+                        }
+                    }
+                }
+                // The player is not being teleported into the vehicle, so the teleporting is successfull.
+                // Notify the user.
+                else
+                {
+                    Notify.Success("Teleported to ~y~<C>" + GetPlayerName(playerId) + "</C>~s~.");
+                }
+            }
+            // The specified playerId does not exist, notify the user of the error.
+            else
+            {
+                Notify.Error(CommonErrors.PlayerNotFound, placeholderValue: "So the teleport has been cancelled.");
+            }
         }
         #endregion
 
@@ -247,7 +420,7 @@ namespace PropHunt.Client
             this.SetHealth(HEALTH_MAX);
             this.SetArmor(0);
             RemoveAllPedWeapons(Game.Player.Character.Handle, true);
-            Game.Player.State.Set<PlayerTeams>(Constants.StateBagKeys.PlayerTeam, PlayerTeams.Unassigned, true);
+            Game.Player.State.Set<PlayerTeams>(Constants.StateBagKeys.PlayerTeam, PlayerTeams.Spectator, true);
         }
 
         /// <summary>
