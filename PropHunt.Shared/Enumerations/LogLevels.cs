@@ -6,10 +6,12 @@ using System.Threading.Tasks;
 
 namespace PropHunt.Shared.Enumerations
 {
-    public enum PlayerTeams
+    public enum LogLevels
     {
-        Unassigned,
-        Hunter,
-        Prop,
+        Error,
+        Success,
+        Info,
+        Warning,
+        None
     }
 }

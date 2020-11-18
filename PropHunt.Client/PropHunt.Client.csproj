@@ -9,9 +9,10 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>PropHunt.Client</RootNamespace>
     <AssemblyName>PropHunt.Client.net</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -34,9 +35,6 @@
     <NoWarn>CS4014,CS1998</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="CitizenFX.Core">
-      <HintPath>..\Libs\Client\CitizenFX.Core.dll</HintPath>
-    </Reference>
     <Reference Include="PropHunt.Shared.net">
       <HintPath>..\PropHunt.Shared\bin\Release\PropHunt.Shared.net.dll</HintPath>
     </Reference>
@@ -55,18 +53,22 @@
   <ItemGroup>
     <Compile Include="cl_Commands.cs" />
     <Compile Include="cl_Environment.cs" />
-    <Compile Include="cl_Rounds.cs" />
+    <Compile Include="cl_GameManager.cs" />
+    <Compile Include="cl_Logging.cs" />
     <Compile Include="cl_Player.cs" />
     <Compile Include="cl_Audio.cs" />
     <Compile Include="Extensions\StateBagExt.cs" />
     <Compile Include="Utils\EntityUtil.cs" />
     <Compile Include="Utils\NotificationsUtil.cs" />
-    <Compile Include="Utils\PlayerUtil.cs" />
     <Compile Include="Utils\TextUtil.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="cl_Init.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <PackageReference Include="CitizenFX.Core.Client">
+      <Version>1.0.3196</Version>
+    </PackageReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>copy /Y "$(TargetPath)" "D:\Repository\FiveM\Prop Hunt Server\data\resources\PropHunt"</PostBuildEvent>

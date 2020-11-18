@@ -9,9 +9,10 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>PropHunt.Server</RootNamespace>
     <AssemblyName>PropHunt.Server.net</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -34,9 +35,6 @@
     <NoWarn>CS4014,CS1998</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="CitizenFX.Core">
-      <HintPath>..\Libs\Server\CitizenFX.Core.dll</HintPath>
-    </Reference>
     <Reference Include="PropHunt.Shared.net">
       <HintPath>..\PropHunt.Shared\bin\Release\PropHunt.Shared.net.dll</HintPath>
     </Reference>
@@ -54,9 +52,15 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="sv_Environment.cs" />
     <Compile Include="sv_Audio.cs" />
-    <Compile Include="sv_Rounds.cs" />
+    <Compile Include="sv_GameManager.cs" />
     <Compile Include="sv_Init.cs" />
+    <Compile Include="sv_Logging.cs" />
     <Compile Include="sv_Player.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="CitizenFX.Core.Server">
+      <Version>1.0.3196</Version>
+    </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

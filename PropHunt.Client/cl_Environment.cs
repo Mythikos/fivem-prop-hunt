@@ -1,4 +1,5 @@
 ﻿using CitizenFX.Core;
+using PropHunt.Shared;
 using PropHunt.Shared.Attributes;
 using PropHunt.Shared.Enumerations;
 using PropHunt.Shared.Extensions;
@@ -11,17 +12,9 @@ using static CitizenFX.Core.Native.API;
 
 namespace PropHunt.Client
 {
-    internal class cl_Environment
+    internal static class cl_Environment
     {
-        private cl_Init _parentInstance;
-
-        public cl_Environment(cl_Init parentInstance)
-        {
-            this._parentInstance = parentInstance;
-        }
-
-        #region Events
-        public void OnTimeChanged(int timeOfDayState)
+        public static void SetTime(int timeOfDayState)
         {
             TimeOfDayStates timeStateEnum;
 
@@ -29,8 +22,8 @@ namespace PropHunt.Client
 
             NetworkOverrideClockTime(timeStateEnum.GetAttribute<NativeValueInt>().NativeValue, 0, 0);
         }
-        
-        public void OnWeatherChanged(int weatherState)
+
+        public static void SetWeather(int weatherState)
         {
             WeatherStates weatherStateEnum;
 
@@ -43,8 +36,8 @@ namespace PropHunt.Client
             SetForcePedFootstepsTracks(false);
             SetForceVehicleTrails(false);
         }
-        
-        public void OnWeatherAndTimeChanged(int weatherState, int timeOfDayState)
+
+        public static void SetWeatherAndTime(int weatherState, int timeOfDayState)
         {
             WeatherStates weatherStateEnum;
             TimeOfDayStates timeStateEnum;
@@ -60,6 +53,5 @@ namespace PropHunt.Client
             SetForceVehicleTrails(false);
             NetworkOverrideClockTime(timeStateEnum.GetAttribute<NativeValueInt>().NativeValue, 0, 0);
         }
-        #endregion
     }
 }

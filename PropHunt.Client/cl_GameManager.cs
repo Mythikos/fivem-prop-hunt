@@ -14,26 +14,15 @@ using static CitizenFX.Core.Native.API;
 
 namespace PropHunt.Client
 {
-    internal class cl_Rounds
+    internal static class cl_GameManager
     {
         #region Instance Variables / Properties
-        private cl_Init _parentInstance;
-
-        public GameStates GameState { get; private set; }
-        public float TimeRemainingInSeconds { get; private set; }
+        public static GameStates GameState { get; private set; }
+        public static float TimeRemainingInSeconds { get; private set; }
         #endregion
 
-
-        public cl_Rounds(cl_Init parentInstance)
-        {
-            if (parentInstance == null)
-                throw new ArgumentNullException("parentInstance");
-
-            this._parentInstance = parentInstance;
-        }
-
         #region Events
-        public async Task OnTick()
+        public static async Task OnTick()
         {
             //
             // Disable vehicle/pedestrian spawns
@@ -44,19 +33,17 @@ namespace PropHunt.Client
             SetVehicleDensityMultiplierThisFrame(0f);
         }
 
-        public void OnSync(int gameState, float timeRemainingInSeconds)
+        public static void OnSyncGameState(int gameState, float timeRemainingInSeconds)
         {
-            this.GameState = (GameStates)gameState;
-            this.TimeRemainingInSeconds = timeRemainingInSeconds;
+            cl_GameManager.GameState = (GameStates)gameState;
+            cl_GameManager.TimeRemainingInSeconds = timeRemainingInSeconds;
         }
 
-        public void OnStateChanged(int state)
+        public static void OnGameStateChanged(int state)
         {
 
             GameStates gameState = (GameStates)state;
-            PlayerTeams playerState = Game.Player.State.Get<PlayerTeams>(Constants.StateBagKeys.PlayerTeam);
-
-            TextUtil.SendChatMessage($"OnUpdateGameState: {gameState}");
+            PlayerTeams playerState = Game.Player.State.Get<PlayerTeams>(Constants.State.Player.Team);
 
             // Enable PvP
             SetPlayerTeam(Game.Player.Handle, (int)playerState);
@@ -66,35 +53,35 @@ namespace PropHunt.Client
             // Determine game state
             if (gameState.Equals(GameStates.WaitingForPlayers))
             {
-                this._parentInstance.Player.SetInvincible(true);
+                cl_Player.SetInvincible(true);
             }
             else if (gameState.Equals(GameStates.PreRound))
             {
-                this._parentInstance.SpawnManager_SpawnPlayer(-1486, 195, 56);
-                this._parentInstance.Player.SetInvincible(true);
+                cl_Init.TriggerEvent(Constants.Actions.Player.Spawn, -1486, 195, 56);
+                cl_Player.SetInvincible(true);
             }
             else if (gameState.Equals(GameStates.Hiding))
             {
                 if (playerState == PlayerTeams.Hunter)
                 {
-                    this._parentInstance.Player.Blind(true);
-                    this._parentInstance.Player.Freeze(true);
-                    this._parentInstance.Player.SetInvincible(true);
+                    cl_Player.Blind(true);
+                    cl_Player.Freeze(true);
+                    cl_Player.SetInvincible(true);
                 }
                 else if (playerState == PlayerTeams.Prop)
                 {
-                    this._parentInstance.Player.SetInvincible(false);
+                    cl_Player.SetInvincible(false);
                 }
             }
             else if (gameState.Equals(GameStates.Hunting))
             {
-                this._parentInstance.Player.SetInvincible(false);
+                cl_Player.SetInvincible(false);
 
                 if (playerState == PlayerTeams.Hunter)
                 {
-                    this._parentInstance.Player.Blind(false);
-                    this._parentInstance.Player.Freeze(false);
-                    this._parentInstance.Player.GiveWeapons(new Dictionary<string, int>()
+                    cl_Player.Blind(false);
+                    cl_Player.Freeze(false);
+                    cl_Player.GiveWeapons(new Dictionary<string, int>()
                     {
                         { "WEAPON_PISTOL", 9999 },
                         { "WEAPON_SMG", 9999 }
@@ -103,7 +90,7 @@ namespace PropHunt.Client
             }
             else if (gameState.Equals(GameStates.PostRound))
             {
-                this._parentInstance.Player.Reset();
+                cl_Player.Reset();
             }
         }
         #endregion

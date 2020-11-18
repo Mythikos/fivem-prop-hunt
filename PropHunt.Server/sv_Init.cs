@@ -15,26 +15,28 @@ namespace PropHunt.Server
 {
     public class sv_Init : BaseScript
     {
-        internal sv_Rounds Rounds { get; private set; }
-        internal sv_Player Player { get; private set; }
-        internal sv_Environment Environment { get; private set; }
-        internal sv_Audio Audio { get; private set; }
+        internal static readonly bool DebugMode = true;
 
         public sv_Init()
         {
             try
             {
                 //
-                // Initialize server elements
-                this.Rounds = new sv_Rounds(this);
-                this.Player = new sv_Player(this);
-                this.Environment = new sv_Environment(this);
-                this.Audio = new sv_Audio(this);
+                // Get them static bois woke
+                System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(sv_Player).TypeHandle);
+                System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(sv_Logging).TypeHandle);
+                System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(sv_GameManager).TypeHandle);
+                System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(sv_Environment).TypeHandle);
+                System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(sv_Audio).TypeHandle);
+
+                //
+                // Assign instance stuff
+                PlayerList.SetInstance(this);
 
                 //
                 // Subscribe to events
-                this.EventHandlers["playerConnecting"] += new Action<Player, string, dynamic, dynamic>(OnPlayerConnecting);
-                this.EventHandlers["playerDropped"] += new Action<Player, string>(OnPlayerDisconnected);
+                this.EventHandlers.Add(Constants.Events.Player.OnInitialSpawn, new Action<int>(sv_Player.OnPlayerInitialSpawn));
+                this.EventHandlers.Add(Constants.Events.Player.OnSpawn, new Action<int>(sv_Player.OnPlayerSpawn));
 
                 Debug.WriteLine("PropHunt.Server was loaded successfully");
             }
@@ -44,18 +46,23 @@ namespace PropHunt.Server
             }
         }
 
-        #region Native Events
-        private async void OnPlayerConnecting([FromSource] Player player, string playerName, dynamic setKickReason, dynamic deferrals)
+        internal static class PlayerList 
         {
-            deferrals.defer();
-            await Delay(0);
-            deferrals.done();
-        }
+            private static sv_Init _parentInstance;
+            public static void SetInstance(sv_Init parentInstance)
+                => _parentInstance = parentInstance;
 
-        private void OnPlayerDisconnected([FromSource] Player player, string reason)
-        {
-            Debug.WriteLine($"Player {player.Name} dropped (Reason: {reason}).");
+            public static List<Player> GetAllPlayers()
+                => _parentInstance?.Players?.ToList() ?? new List<Player>();
+
+            public static List<Player> GetAllActivePlayers()
+                => _parentInstance?.Players?.Where(x => x?.Character != null).ToList() ?? new List<Player>();
+
+            public static Player GetPlayer(int serverId)
+                => _parentInstance?.Players?[serverId];
+
+            public static Player GetPlayer(string name)
+                => _parentInstance?.Players?.FirstOrDefault(x => x.Name.Equals(name));
         }
-        #endregion
     }
 }

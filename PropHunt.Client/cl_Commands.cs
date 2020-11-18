@@ -1,5 +1,6 @@
 ﻿using CitizenFX.Core;
 using PropHunt.Client.Utils;
+using PropHunt.Shared;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,21 +10,9 @@ using static CitizenFX.Core.Native.API;
 
 namespace PropHunt.Client
 {
-    internal class cl_Commands
+    internal static class cl_Commands
     {
-        private cl_Init _parentInstance;
-
-        public cl_Commands(cl_Init parentInstance)
-        {
-            if (parentInstance == null)
-                throw new ArgumentNullException("parentInstance");
-
-            this._parentInstance = parentInstance;
-
-            InitializeCommands();
-        }
-
-        public void InitializeCommands()
+        static cl_Commands()
         {
             RegisterCommand("spawncar", new Action<int, List<object>, string>(async (source, args, raw) =>
             {
@@ -98,9 +87,17 @@ namespace PropHunt.Client
                 GiveWeaponToPed(Game.PlayerPed.Handle, (uint)GetHashKey(args[0].ToString()), 999, false, true);
             }), false);
 
-            RegisterCommand("ts", new Action<int, List<object>, string>((source, args, raw) =>
+            RegisterCommand("spawn", new Action<int, List<object>, string>((source, args, raw) =>
+            {
+                cl_Init.TriggerEvent(Constants.Actions.Player.Spawn, Game.PlayerPed.Position.X, Game.PlayerPed.Position.Y, Game.PlayerPed.Position.Z);
+            }), false);
+
+            //
+            // Test commands
+            RegisterCommand("test.timecycle", new Action<int, List<object>, string>((source, args, raw) =>
             {
                 ClearTimecycleModifier();
+                ClearExtraTimecycleModifier();
 
                 if (args.Count == 1)
                 {
@@ -113,16 +110,9 @@ namespace PropHunt.Client
                 }
             }), false);
 
-            RegisterCommand("spawn", new Action<int, List<object>, string>((source, args, raw) =>
-            {
-                this._parentInstance.SpawnManager_SpawnPlayer(Game.PlayerPed.Position.X, Game.PlayerPed.Position.Y, Game.PlayerPed.Position.Z);
-            }), false);
-
-            //
-            // Test commands
             RegisterCommand("test.audio", new Action<int, List<object>, string>((source, args, raw) =>
             {
-                this._parentInstance.Audio.PlayFromPlayer(args[0].ToString(), args[1].ToString());
+                cl_Audio.PlayFromPlayer(args[0].ToString(), args[1].ToString());
             }), false);
 
             RegisterCommand("test.notifications", new Action<int, List<object>, string>((source, args, raw) =>

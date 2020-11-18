@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>PropHunt.Shared</RootNamespace>
     <AssemblyName>PropHunt.Shared.net</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <TargetFrameworkProfile />
@@ -47,12 +47,14 @@
     <Compile Include="Constants.cs" />
     <Compile Include="Enumerations\GamerTagComponents.cs" />
     <Compile Include="Enumerations\GameStates.cs" />
+    <Compile Include="Enumerations\LogLevels.cs" />
     <Compile Include="Enumerations\PlayerTeams.cs" />
     <Compile Include="Enumerations\TimeOfDayStates.cs" />
     <Compile Include="Enumerations\WeatherStates.cs" />
     <Compile Include="Extensions\ArrayExt.cs" />
     <Compile Include="Extensions\AttributeExt.cs" />
     <Compile Include="Extensions\IEnumerableExt.cs" />
+    <Compile Include="Implementations\WrappingIterator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

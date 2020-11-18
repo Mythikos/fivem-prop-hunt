@@ -9,31 +9,49 @@ using System.Threading.Tasks;
 
 namespace PropHunt.Server
 {
-    internal class sv_Environment
+    /// <summary>
+    /// Controls the weather from the server side
+    /// </summary>
+    internal static class sv_Environment
     {
-        private sv_Init _parentInstance;
+        /// <summary>
+        /// Sets the weather state for each client
+        /// </summary>
+        /// <param name="weatherState"></param>
+        public static void SetWeather(WeatherStates weatherState)
+            => sv_Init.TriggerClientEvent(Constants.Actions.Environment.SetWeather, (int)weatherState);
 
-        public sv_Environment(sv_Init parentInstance)
-        {
-            this._parentInstance = parentInstance;
-        }
-
-        public void SetWeather(WeatherStates weatherState)
-            => sv_Init.TriggerClientEvent(Constants.Events.Client.OnEnvironmentWeatherChanged, (int)weatherState);
-
-        public void RandomizeWeather()
+        /// <summary>
+        /// Randomizes the weather state and assigns it to each client
+        /// </summary>
+        public static void RandomizeWeather()
             => SetWeather((WeatherStates)Enum.GetValues(typeof(WeatherStates)).Random<int>());
 
-        public void SetTime(TimeOfDayStates timeOfDayState)
-            => sv_Init.TriggerClientEvent(Constants.Events.Client.OnEnvironmentTimeChanged, (int)timeOfDayState);
+        /// <summary>
+        /// Sets the time state for each client
+        /// </summary>
+        /// <param name="timeOfDayState"></param>
+        public static void SetTime(TimeOfDayStates timeOfDayState)
+            => sv_Init.TriggerClientEvent(Constants.Actions.Environment.SetTime, (int)timeOfDayState);
 
-        public void RandomizeTime()
+        /// <summary>
+        /// Randomizes the time state and assigns it to each client
+        /// </summary>
+        public static void RandomizeTime()
             => SetTime((TimeOfDayStates)Enum.GetValues(typeof(TimeOfDayStates)).Random<int>());
 
-        public void SetWeatherAndTime(WeatherStates weatherState, TimeOfDayStates timeOfDayState)
-            => sv_Init.TriggerClientEvent(Constants.Events.Client.OnEnvironmentWeatherAndTimeChanged, (int)weatherState, (int)timeOfDayState);
+        /// <summary>
+        /// Sets the weather and time state for each client
+        /// </summary>
+        /// <param name="weatherState"></param>
+        /// <param name="timeOfDayState"></param>
+        public static void SetWeatherAndTime(WeatherStates weatherState, TimeOfDayStates timeOfDayState)
+            => sv_Init.TriggerClientEvent(Constants.Actions.Environment.SetWeatherAndTime, (int)weatherState, (int)timeOfDayState);
 
-        public void RandomizeWeatherAndTime()
+        /// <summary>
+        /// Randomizes the weather and time state and assigns it to each client
+        /// </summary>
+        public static void RandomizeWeatherAndTime()
             => SetWeatherAndTime((WeatherStates)Enum.GetValues(typeof(WeatherStates)).Random<int>(), (TimeOfDayStates)Enum.GetValues(typeof(TimeOfDayStates)).Random<int>());
     }
 }

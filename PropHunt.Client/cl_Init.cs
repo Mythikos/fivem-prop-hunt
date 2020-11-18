@@ -11,6 +11,7 @@ using PropHunt.Shared.Enumerations;
 using PropHunt.Shared;
 using PropHunt.Client.Extensions;
 using System.Dynamic;
+using System.Threading;
 using PropHunt.Shared.Attributes;
 using PropHunt.Shared.Extensions;
 
@@ -30,50 +31,51 @@ namespace PropHunt.Client
 {
     public class cl_Init : BaseScript
     {
-        internal cl_Rounds Rounds { get; private set; }
-        internal cl_Player Player { get; private set; }
-        internal cl_Environment Environment { get; private set; }
-        internal cl_Audio Audio { get; private set; }
-        internal cl_Commands Commands { get; private set; }
-
+        internal static readonly bool DebugMode = true;
+        private Timer _garbageCollectorTimer;
+        
         public cl_Init()
         {
             try
             {
                 //
-                // Initialize client elements
-                this.Rounds = new cl_Rounds(this);
-                this.Player = new cl_Player(this);
-                this.Environment = new cl_Environment(this);
-                this.Audio = new cl_Audio(this);
-                this.Commands = new cl_Commands(this);
+                // Get them static bois woke
+                System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(cl_Player).TypeHandle);
+                System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(cl_Logging).TypeHandle);
+                System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(cl_GameManager).TypeHandle);
+                System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(cl_Environment).TypeHandle);
+                System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(cl_Commands).TypeHandle);
+                System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(cl_Audio).TypeHandle);
+
+                //
+                // Assign instance stuff
+                this._garbageCollectorTimer = new Timer(GarbageCollectorTimerCallback, null, 0, 60000);
+                this.SpawnManager_SetAutoSpawn(false);
+                PlayerList.SetInstance(this);
 
                 //
                 // Subscribe to events
                 this.Tick += OnTick;
-                this.Tick += GcTick;
-                this.Tick += this.Rounds.OnTick;
-                this.Tick += this.Player.OnTick;
-                this.Tick += this.Player.OnTick_DrawGamerTags;
-                this.Tick += this.Player.OnTick_DrawComponents;
+                this.Tick += cl_GameManager.OnTick;
+                this.Tick += cl_Player.OnTick;
+                this.Tick += cl_Player.OnTick_DrawGamerTags;
+                this.Tick += cl_Player.OnTick_DrawComponents;
+                this.Tick += cl_Player.OnTick_HandleSpectate;
 
-                this.EventHandlers.Add("playerSpawned", new Action(this.Player.OnPlayerSpawned));
-                this.EventHandlers.Add("baseevents:onPlayerDied", new Action<Player, int>(this.Player.OnPlayerDied));
-                this.EventHandlers.Add("baseevents:onPlayerKilled", new Action<Player, int, dynamic>(this.Player.OnPlayerKilled));
-                this.EventHandlers.Add("gameEventTriggered", new Action<string, List<dynamic>>(OnGameEventTriggered));
-
-                this.EventHandlers.Add(Constants.Events.Client.OnRoundSync, new Action<int, float>(this.Rounds.OnSync));
-                this.EventHandlers.Add(Constants.Events.Client.OnRoundStateChanged, new Action<int>(this.Rounds.OnStateChanged));
-
-                this.EventHandlers.Add(Constants.Events.Client.OnEnvironmentTimeChanged, new Action<int>(this.Environment.OnTimeChanged));
-                this.EventHandlers.Add(Constants.Events.Client.OnEnvironmentWeatherChanged, new Action<int>(this.Environment.OnWeatherChanged));
-                this.EventHandlers.Add(Constants.Events.Client.OnEnvironmentWeatherAndTimeChanged, new Action<int, int>(this.Environment.OnWeatherAndTimeChanged));
-
-                this.EventHandlers.Add(Constants.Events.Client.OnAudioPlay, new Action<string, string>(this.Audio.Play));
-                this.EventHandlers.Add(Constants.Events.Client.OnAudioPlayFromPlayer, new Action<string, string>(this.Audio.PlayFromPlayer));
-                this.EventHandlers.Add(Constants.Events.Client.OnAudioPlayFromPosition, new Action<float, float, float, string, string>(this.Audio.PlayFromPosition));
-
-                this.EventHandlers.Add(Constants.Events.Client.ClientAction, new Action<string>(OnClientAction));
+                this.EventHandlers.Add(Constants.Actions.Player.Kill, new Action(() => { Game.Player.Character.Kill(); }));
+                this.EventHandlers.Add(Constants.Actions.Player.Spawn, new Action<float, float, float>((float x, float y, float z) => { this.SpawnManager_SpawnPlayer(x, y, z); }));
+                this.EventHandlers.Add("gameEventTriggered", new Action<string, List<dynamic>>(OnEntityDamage));
+                this.EventHandlers.Add("playerSpawned", new Action(cl_Player.OnPlayerSpawned));
+                this.EventHandlers.Add("baseevents:onPlayerDied", new Action<Player, int>(cl_Player.OnPlayerDied));
+                this.EventHandlers.Add("baseevents:onPlayerKilled", new Action<Player, int, dynamic>(cl_Player.OnPlayerKilled));
+                this.EventHandlers.Add(Constants.Events.GameManager.OnSyncGameState, new Action<int, float>(cl_GameManager.OnSyncGameState));
+                this.EventHandlers.Add(Constants.Events.GameManager.OnGameStateChanged, new Action<int>(cl_GameManager.OnGameStateChanged));
+                this.EventHandlers.Add(Constants.Actions.Environment.SetTime, new Action<int>(cl_Environment.SetTime));
+                this.EventHandlers.Add(Constants.Actions.Environment.SetWeather, new Action<int>(cl_Environment.SetWeather));
+                this.EventHandlers.Add(Constants.Actions.Environment.SetWeatherAndTime, new Action<int, int>(cl_Environment.SetWeatherAndTime));
+                this.EventHandlers.Add(Constants.Actions.Audio.Play, new Action<string, string>(cl_Audio.Play));
+                this.EventHandlers.Add(Constants.Actions.Audio.PlayFromPlayer, new Action<string, string>(cl_Audio.PlayFromPlayer));
+                this.EventHandlers.Add(Constants.Actions.Audio.PlayFromPosition, new Action<float, float, float, string, string>(cl_Audio.PlayFromPosition));
 
                 Debug.WriteLine($"PropHunt.Client was loaded successfully.");
             }
@@ -83,20 +85,25 @@ namespace PropHunt.Client
             }
         }
 
-        #region Client Events
+        #region Events
         private async Task OnTick()
         {
             //
             // Draw debugging
             TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.0f), $"SID: {Game.Player.ServerId} - Handle: {Game.Player.Handle}");
-            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.1f), $"Player Team: {Game.Player.State.Get<PlayerTeams>(Constants.StateBagKeys.PlayerTeam)}");
-            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.2f), $"Player Initial Spawn: {Game.Player.State.Get(Constants.StateBagKeys.PlayerInitialSpawn)}");
+            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.1f), $"Player Team: {Game.Player.State.Get<PlayerTeams>(Constants.State.Player.Team)}");
+            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.2f), $"Player Initial Spawn: {Game.Player.State.Get(Constants.State.Player.InitialSpawn)}");
             TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.3f), $"Player IsInvincible: {Game.PlayerPed.IsInvincible}");
-            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.4f), $"Time Remaining: {this.Rounds.TimeRemainingInSeconds}");
-            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.5f), $"Game State: {this.Rounds.GameState}");
+            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.4f), $"Time Remaining: {cl_GameManager.TimeRemainingInSeconds}");
+            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.5f), $"Game State: {cl_GameManager.GameState}");
         }
 
-        private void OnGameEventTriggered(string name, List<dynamic> args)
+        /// <summary>
+        /// Fires when the CEventNetworkEntityDamage game event is triggered 
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="args"></param>
+        private static void OnEntityDamage(string name, List<dynamic> args)
         {
             Entity target = null;
             Entity attacker = null;
@@ -221,35 +228,17 @@ namespace PropHunt.Client
                 }
             }
         }
-
-        public void OnClientAction(string action)
-        {
-            if (action.Equals(Constants.Events.Client.Actions.Kill))
-            {
-                Game.PlayerPed.Kill();
-            }
-            else if (action.Equals(Constants.Events.Client.Actions.Spawn))
-            {
-                this.SpawnManager_SpawnPlayer(Game.PlayerPed.Position.X, Game.PlayerPed.Position.Y, Game.PlayerPed.Position.Z);
-            }
-        }
         #endregion
 
         #region Spawn Manager Exports
         public void SpawnManager_SetAutoSpawn(bool enable)
-        {
-            this.Exports["spawnmanager"].setAutoSpawn(enable);
-        }
+            => this.Exports["spawnmanager"].setAutoSpawn(enable);
 
         private void SpawnManager_ForceRespawn()
-        {
-            this.Exports["spawnmanager"].forceRespawn();
-        }
+            => this.Exports["spawnmanager"].forceRespawn();
 
         private void SpawnManager_SetAutoSpawnCallback(ExportDictionary export)
-        {
-            this.Exports["spawnmanager"].setAutoSpawnCallback(export);
-        }
+            => this.Exports["spawnmanager"].setAutoSpawnCallback(export);
 
         public void SpawnManager_SpawnPlayer(float x, float y, float z, string modelName = "a_m_y_hipster_01")
         {
@@ -261,27 +250,37 @@ namespace PropHunt.Client
             spawnInfo.model = GetHashKey(modelName);
 
             SpawnManager_SetAutoSpawnCallback(this.Exports["spawnmanager"].spawnPlayer(spawnInfo));
-            SpawnManager_SetAutoSpawn(false);
             SpawnManager_ForceRespawn();
+            SpawnManager_SetAutoSpawn(false);
         }
         #endregion
 
-        #region gc thread
+        #region Timer Callbacks
         /// <summary>
         /// Task for clearing unused memory periodically.
         /// </summary>
         /// <returns></returns>
-        int gcTickTimer = GetGameTimer();
-        private async Task GcTick()
-        {
-            if (GetGameTimer() - gcTickTimer > 60000)
-            {
-                gcTickTimer = GetGameTimer();
-                GC.Collect();
-            }
-
-            await Delay(1000);
-        }
+        private void GarbageCollectorTimerCallback(object state)
+            => GC.Collect();
         #endregion
+
+        internal static class PlayerList
+        {
+            private static cl_Init _parentInstance;
+            public static void SetInstance(cl_Init parentInstance)
+                => _parentInstance = parentInstance;
+
+            public static List<Player> GetAllPlayers()
+                => _parentInstance?.Players?.ToList() ?? new List<Player>();
+
+            public static List<Player> GetAllActivePlayers()
+                => _parentInstance?.Players?.Where(x => x.State.Get<bool>(Constants.State.Player.InitialSpawn) == false).ToList() ?? new List<Player>();
+
+            public static Player GetPlayer(int serverId)
+                => _parentInstance?.Players?[serverId];
+
+            public static Player GetPlayer(string name)
+                => _parentInstance?.Players?.FirstOrDefault(x => x.Name.Equals(name));
+        }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using CitizenFX.Core;
+using CitizenFX.Core.Native;
 using PropHunt.Shared;
 using PropHunt.Shared.Enumerations;
 using PropHunt.Server.Extensions;
@@ -13,76 +14,61 @@ using static CitizenFX.Core.Native.API;
 
 namespace PropHunt.Server
 {
-    internal class sv_Player
+    internal static class sv_Player
     {
         #region Properties
-        private sv_Init _parentInstance;
-
         private const float TIMER_TAUNT_CHECK_INTERVAL = 1000f;
-        private Timer _tauntCheckTimer;
-        private readonly Dictionary<string, string> _tauntSounds = new Dictionary<string, string>()
+
+        private static Timer _tauntCheckTimer;
+        private static readonly Dictionary<string, string> _tauntSounds = new Dictionary<string, string>()
         {
             { "SPEECH_RELATED_SOUNDS", "Franklin_Whistle_For_Chop" },
             { "DLC_Apt_Yacht_Ambient_Soundset", "HORN" }
         };
         #endregion
 
-        public sv_Player(sv_Init parentInstance)
+        static sv_Player()
         {
-            if (parentInstance == null)
-                throw new ArgumentNullException("parentInstance");
-
-            this._parentInstance = parentInstance;
-
             // prep taunt timer
-            this._tauntCheckTimer = new Timer(TauntCheckCallback, null, 0, (int)TIMER_TAUNT_CHECK_INTERVAL);
+            _tauntCheckTimer = new Timer(TauntCheckTimerCallback, null, 0, (int)TIMER_TAUNT_CHECK_INTERVAL);
         }
 
         #region Events
-        [EventHandler(Constants.Events.Server.OnPlayerInitialSpawn)]
-        public void OnPlayerInitialSpawn(int playerServerId)
+        public static void OnPlayerInitialSpawn(int playerServerId)
         {
             Player player;
 
-            player = this._parentInstance.Rounds.AllPlayers[playerServerId];
+            player = sv_Init.PlayerList.GetPlayer(playerServerId);
             if (player != null)
             {
-                if (this._parentInstance.Rounds.State == GameStates.Hiding || this._parentInstance.Rounds.State == GameStates.Hunting)
-                    sv_Init.TriggerClientEvent(player, Constants.Events.Client.Kill);
+                if (sv_GameManager.State == GameStates.Hiding || sv_GameManager.State == GameStates.Hunting)
+                    sv_Init.TriggerClientEvent(player, Constants.Actions.Player.Kill);
+                sv_Logging.Log("OnPlayerInitialSpawn called.");
+            }
+            else
+            {
+                sv_Logging.Log("Player was not found during OnPlayerInitialSpawn... you fucked up.");
             }
         }
 
-        [EventHandler(Constants.Events.Server.OnPlayerSpawn)]
-        public void OnPlayerSpawn(int playerServerId)
+        public static void OnPlayerSpawn(int playerServerId)
         {
             Player player;
 
-            player = this._parentInstance.Rounds.AllPlayers[playerServerId];
+            player = sv_Init.PlayerList.GetPlayer(playerServerId);
             if (player != null)
             {
-
+                sv_Logging.Log("OnPlayerSpawned called.");
             }
-        }
-
-        [EventHandler(Constants.Events.Server.GetPlayerCoords)]
-        private void GetPlayerCoords([FromSource] Player source, int playerId, NetworkCallbackDelegate callback)
-        {
-            if (IsPlayerAceAllowed(source.Handle, "vMenu.OnlinePlayers.Teleport") || IsPlayerAceAllowed(source.Handle, "vMenu.Everything") ||
-                IsPlayerAceAllowed(source.Handle, "vMenu.OnlinePlayers.All"))
+            else
             {
-                var coords = new PlayerList[playerId]?.Character?.Position ?? Vector3.Zero;
-
-                _ = callback(coords);
-
-                return;
+                sv_Logging.Log("Player was not found during OnPlayerSpawnEvent... you fucked up.");
             }
-
-            _ = callback(Vector3.Zero);
         }
         #endregion
 
         #region Timer Callbacks
-        private void TauntCheckCallback(object state)
+        private static void TauntCheckTimerCallback(object state)
         {
             string lastPositionString = string.Empty;
             long tauntTime = 0;
@@ -95,42 +81,42 @@ namespace PropHunt.Server
             KeyValuePair<string, string> selectedTaunt;
 
             // We only want to make a taunt check during the hiding phase
-            if (this._parentInstance.Rounds.State != GameStates.Hunting)
+            if (sv_GameManager.State != GameStates.Hunting)
                 return;
 
             // Iterate over players and check their last position and check count
-            foreach (Player player in new PlayerList())
+            foreach (Player player in sv_Init.PlayerList.GetAllActivePlayers())
             {
                 if (player != null && player.Character != null)
                 {
-                    if (player.State.Get<PlayerTeams>(Constants.StateBagKeys.PlayerTeam) == PlayerTeams.Prop)
+                    if (player.State.Get<PlayerTeams>(Constants.State.Player.Team) == PlayerTeams.Prop)
                     {
                         currentX = (float)Math.Floor(player.Character.Position.X);
                         currentY = (float)Math.Floor(player.Character.Position.Y);
                         currentZ = (float)Math.Floor(player.Character.Position.Z);
 
-                        lastX = (float)Math.Floor(player.State.Get<float>(Constants.StateBagKeys.TauntLastPositionX));
-                        lastY = (float)Math.Floor(player.State.Get<float>(Constants.StateBagKeys.TauntLastPositionY));
-                        lastZ = (float)Math.Floor(player.State.Get<float>(Constants.StateBagKeys.TauntLastPositionZ));
+                        lastX = (float)Math.Floor(player.State.Get<float>(Constants.State.Player.TauntLastPositionX));
+                        lastY = (float)Math.Floor(player.State.Get<float>(Constants.State.Player.TauntLastPositionY));
+                        lastZ = (float)Math.Floor(player.State.Get<float>(Constants.State.Player.TauntLastPositionZ));
 
-                        tauntTime = player.State.Get<long>(Constants.StateBagKeys.TauntLastTime);
+                        tauntTime = player.State.Get<long>(Constants.State.Player.TauntLastTime);
                         if (tauntTime == default) // Handle initial assignment
                             tauntTime = GetGameTimer();
 
                         if (currentX != lastX || currentY != lastY || currentZ != lastZ)
                             tauntTime = GetGameTimer();
 
-                        if (GetGameTimer() - 30 > tauntTime)
+                        if (GetGameTimer() - 30000 > tauntTime)
                         {
                             selectedTaunt = _tauntSounds.Random();
-                            this._parentInstance.Audio.PlayFromPlayer(player, selectedTaunt.Value, selectedTaunt.Key);
+                            sv_Audio.PlayFromPlayer(player, selectedTaunt.Value, selectedTaunt.Key);
                             tauntTime = GetGameTimer();
                         }
 
-                        player.State.Set<long>(Constants.StateBagKeys.TauntLastTime, tauntTime, false); // Dont replicate to client, no need
-                        player.State.Set<float>(Constants.StateBagKeys.TauntLastPositionX, player.Character.Position.X, false); // Dont replicate to client, no need
-                        player.State.Set<float>(Constants.StateBagKeys.TauntLastPositionY, player.Character.Position.Y, false); // Dont replicate to client, no need
-                        player.State.Set<float>(Constants.StateBagKeys.TauntLastPositionZ, player.Character.Position.Z, false); // Dont replicate to client, no need
+                        player.State.Set<long>(Constants.State.Player.TauntLastTime, tauntTime, false); // Dont replicate to client, no need
+                        player.State.Set<float>(Constants.State.Player.TauntLastPositionX, player.Character.Position.X, false); // Dont replicate to client, no need
+                        player.State.Set<float>(Constants.State.Player.TauntLastPositionY, player.Character.Position.Y, false); // Dont replicate to client, no need
+                        player.State.Set<float>(Constants.State.Player.TauntLastPositionZ, player.Character.Position.Z, false); // Dont replicate to client, no need
                     }
                 }
             }
