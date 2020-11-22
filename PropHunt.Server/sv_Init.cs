@@ -25,9 +25,10 @@ namespace PropHunt.Server
                 // Get them static bois woke
                 System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(sv_Player).TypeHandle);
                 System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(sv_Logging).TypeHandle);
-                System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(sv_GameManager).TypeHandle);
+                System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(sv_Game).TypeHandle);
                 System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(sv_Environment).TypeHandle);
                 System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(sv_Audio).TypeHandle);
+                System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(sv_World).TypeHandle);
 
                 //
                 // Assign instance stuff
@@ -38,7 +39,7 @@ namespace PropHunt.Server
                 this.EventHandlers.Add(Constants.Events.Player.OnInitialSpawn, new Action<int>(sv_Player.OnPlayerInitialSpawn));
                 this.EventHandlers.Add(Constants.Events.Player.OnSpawn, new Action<int>(sv_Player.OnPlayerSpawn));
 
-                Debug.WriteLine("PropHunt.Server was loaded successfully");
+                 Debug.WriteLine("PropHunt.Server was loaded successfully");
             }
             catch (Exception ex)
             {

@@ -4,14 +4,8 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 16.0.30611.23
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PropHunt.Server", "PropHunt.Server\PropHunt.Server.csproj", "{F8AB4E4B-B922-41F7-B90F-39A67D7FDA86}"
-	ProjectSection(ProjectDependencies) = postProject
-		{A37BD69D-45C5-43AC-A3A8-CE2093C249EF} = {A37BD69D-45C5-43AC-A3A8-CE2093C249EF}
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PropHunt.Client", "PropHunt.Client\PropHunt.Client.csproj", "{A85A3E9E-32C5-4FFC-8638-B62375C0E6FE}"
-	ProjectSection(ProjectDependencies) = postProject
-		{A37BD69D-45C5-43AC-A3A8-CE2093C249EF} = {A37BD69D-45C5-43AC-A3A8-CE2093C249EF}
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PropHunt.Shared", "PropHunt.Shared\PropHunt.Shared.csproj", "{A37BD69D-45C5-43AC-A3A8-CE2093C249EF}"
 EndProject

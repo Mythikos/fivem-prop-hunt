@@ -14,7 +14,7 @@ using static CitizenFX.Core.Native.API;
 
 namespace PropHunt.Client
 {
-    internal static class cl_GameManager
+    internal static class cl_Game
     {
         #region Instance Variables / Properties
         public static GameStates GameState { get; private set; }
@@ -35,8 +35,8 @@ namespace PropHunt.Client
 
         public static void OnSyncGameState(int gameState, float timeRemainingInSeconds)
         {
-            cl_GameManager.GameState = (GameStates)gameState;
-            cl_GameManager.TimeRemainingInSeconds = timeRemainingInSeconds;
+            cl_Game.GameState = (GameStates)gameState;
+            cl_Game.TimeRemainingInSeconds = timeRemainingInSeconds;
         }
 
         public static void OnGameStateChanged(int state)

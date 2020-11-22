@@ -46,6 +46,12 @@ namespace PropHunt.Shared
                 public const string PlayFromPosition = "3ec525f5811549248440c36d22712384";
                 public const string Play = "542f69c47c53427dbf9f227784b4aa5f";
             }
+
+            public static class World
+            {
+                public const string Setup = "c654cfc4504c48069516a05765ce409b";
+                public const string Cleanup = "28940621d06a4ca38b023bbd40bd96a3";
+            }
         }
 
         public static class State

@@ -16,16 +16,21 @@ using PropHunt.Shared.Attributes;
 using PropHunt.Shared.Extensions;
 
 /// <summary>
-/// NOTES:
-///     prop_mil_crate_02 is good for a crate
-///     1593 3219 40 is a good position
-/// 
 /// TODO:
 ///     Need to add locations or "sections" of the map to play on
-///     When hunters are blinded, weapon wheel removes blind. Need to disable weapon wheel until round is Hunting
-///     When the attached prop breaks, the player needs to die
 ///     Prop rotation replication is not working
-///     Add blip above player's heads that are on the same team
+///     
+///     Add actual player hud to game.
+///         Name
+///         Scoreboard
+///         Health/Armor
+///         Idle indicator until next taunt
+///         
+/// TUNING:
+///     Adjust spectator camera's sentitivity. Maybe use player's configured sensitivity.
+///     Spectator camera doesn't show player's gamertag if they are outside of the range of the spectator's body.
+///     Add new taunt audio clips.
+///     Optimize prop highlighting. Appears to be a massive FPS drop around a lot of props.
 /// </summary>
 namespace PropHunt.Client
 {
@@ -42,10 +47,11 @@ namespace PropHunt.Client
                 // Get them static bois woke
                 System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(cl_Player).TypeHandle);
                 System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(cl_Logging).TypeHandle);
-                System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(cl_GameManager).TypeHandle);
+                System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(cl_Game).TypeHandle);
                 System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(cl_Environment).TypeHandle);
                 System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(cl_Commands).TypeHandle);
                 System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(cl_Audio).TypeHandle);
+                System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(cl_World).TypeHandle);
 
                 //
                 // Assign instance stuff
@@ -56,11 +62,11 @@ namespace PropHunt.Client
                 //
                 // Subscribe to events
                 this.Tick += OnTick;
-                this.Tick += cl_GameManager.OnTick;
+                this.Tick += cl_Game.OnTick;
                 this.Tick += cl_Player.OnTick;
                 this.Tick += cl_Player.OnTick_DrawGamerTags;
                 this.Tick += cl_Player.OnTick_DrawComponents;
-                this.Tick += cl_Player.OnTick_HandleSpectate;
+                this.Tick += cl_Player.Spectate.OnTick;
 
                 this.EventHandlers.Add(Constants.Actions.Player.Kill, new Action(() => { Game.Player.Character.Kill(); }));
                 this.EventHandlers.Add(Constants.Actions.Player.Spawn, new Action<float, float, float>((float x, float y, float z) => { this.SpawnManager_SpawnPlayer(x, y, z); }));
@@ -68,14 +74,16 @@ namespace PropHunt.Client
                 this.EventHandlers.Add("playerSpawned", new Action(cl_Player.OnPlayerSpawned));
                 this.EventHandlers.Add("baseevents:onPlayerDied", new Action<Player, int>(cl_Player.OnPlayerDied));
                 this.EventHandlers.Add("baseevents:onPlayerKilled", new Action<Player, int, dynamic>(cl_Player.OnPlayerKilled));
-                this.EventHandlers.Add(Constants.Events.GameManager.OnSyncGameState, new Action<int, float>(cl_GameManager.OnSyncGameState));
-                this.EventHandlers.Add(Constants.Events.GameManager.OnGameStateChanged, new Action<int>(cl_GameManager.OnGameStateChanged));
+                this.EventHandlers.Add(Constants.Events.GameManager.OnSyncGameState, new Action<int, float>(cl_Game.OnSyncGameState));
+                this.EventHandlers.Add(Constants.Events.GameManager.OnGameStateChanged, new Action<int>(cl_Game.OnGameStateChanged));
                 this.EventHandlers.Add(Constants.Actions.Environment.SetTime, new Action<int>(cl_Environment.SetTime));
                 this.EventHandlers.Add(Constants.Actions.Environment.SetWeather, new Action<int>(cl_Environment.SetWeather));
                 this.EventHandlers.Add(Constants.Actions.Environment.SetWeatherAndTime, new Action<int, int>(cl_Environment.SetWeatherAndTime));
                 this.EventHandlers.Add(Constants.Actions.Audio.Play, new Action<string, string>(cl_Audio.Play));
                 this.EventHandlers.Add(Constants.Actions.Audio.PlayFromPlayer, new Action<string, string>(cl_Audio.PlayFromPlayer));
                 this.EventHandlers.Add(Constants.Actions.Audio.PlayFromPosition, new Action<float, float, float, string, string>(cl_Audio.PlayFromPosition));
+                this.EventHandlers.Add(Constants.Actions.World.Setup, new Action(cl_World.Setup));
+                this.EventHandlers.Add(Constants.Actions.World.Cleanup, new Action<float, float, float, float>(cl_World.Cleanup));
 
                 Debug.WriteLine($"PropHunt.Client was loaded successfully.");
             }
@@ -94,8 +102,8 @@ namespace PropHunt.Client
             TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.1f), $"Player Team: {Game.Player.State.Get<PlayerTeams>(Constants.State.Player.Team)}");
             TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.2f), $"Player Initial Spawn: {Game.Player.State.Get(Constants.State.Player.InitialSpawn)}");
             TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.3f), $"Player IsInvincible: {Game.PlayerPed.IsInvincible}");
-            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.4f), $"Time Remaining: {cl_GameManager.TimeRemainingInSeconds}");
-            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.5f), $"Game State: {cl_GameManager.GameState}");
+            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.4f), $"Time Remaining: {cl_Game.TimeRemainingInSeconds}");
+            TextUtil.DrawText3D(Game.PlayerPed.Position + new Vector3(0f, 0f, 1.5f), $"Game State: {cl_Game.GameState}");
         }
 
         /// <summary>

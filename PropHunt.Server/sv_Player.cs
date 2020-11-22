@@ -41,7 +41,7 @@ namespace PropHunt.Server
             player = sv_Init.PlayerList.GetPlayer(playerServerId);
             if (player != null)
             {
-                if (sv_GameManager.State == GameStates.Hiding || sv_GameManager.State == GameStates.Hunting)
+                if (sv_Game.State == GameStates.Hiding || sv_Game.State == GameStates.Hunting)
                     sv_Init.TriggerClientEvent(player, Constants.Actions.Player.Kill);
                 sv_Logging.Log("OnPlayerInitialSpawn called.");
             }
@@ -64,6 +64,21 @@ namespace PropHunt.Server
             {
                 sv_Logging.Log("Player was not found during OnPlayerSpawnEvent... you fucked up.");
             }
+
+            sv_World.Setup(new sv_World.Zone()
+            {
+                Points = new List<Vector3>()
+                {
+                    new Vector3(-1420, 207, 58),
+                    new Vector3(-1450, 243, 60),
+                    new Vector3(-1468, 234, 59),
+                    new Vector3(-1496, 199, 57),
+                    new Vector3(-1499, 169, 54),
+                    new Vector3(-1457, 135, 52),
+                    new Vector3(-1455, 151, 54),
+                    new Vector3(-1439, 180, 56),
+                }
+            });
         }
         #endregion
 
@@ -81,7 +96,7 @@ namespace PropHunt.Server
             KeyValuePair<string, string> selectedTaunt;
 
             // We only want to make a taunt check during the hiding phase
-            if (sv_GameManager.State != GameStates.Hunting)
+            if (sv_Game.State != GameStates.Hunting)
                 return;
 
             // Iterate over players and check their last position and check count

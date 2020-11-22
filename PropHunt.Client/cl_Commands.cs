@@ -123,6 +123,32 @@ namespace PropHunt.Client
                 NotificationsUtil.Info(args[0].ToString(), true, true);
                 NotificationsUtil.Success(args[0].ToString(), true, true);
             }), false);
+
+            RegisterCommand("test.spectate.start", new Action<int, List<object>, string>((source, args, raw) =>
+            {
+                cl_Player.Spectate.Start();
+            }), false);
+
+            RegisterCommand("test.spectate.changetarget", new Action<int, List<object>, string>((source, args, raw) =>
+            {
+                cl_Player.Spectate.ChangeTarget(int.Parse(args[0]?.ToString() ?? "0"));
+            }), false);
+
+            RegisterCommand("test.spectate.end", new Action<int, List<object>, string>((source, args, raw) =>
+            {
+                cl_Player.Spectate.End();
+            }), false);
+
+
+            RegisterCommand("test.propdims", new Action<int, List<object>, string>((source, args, raw) =>
+            {
+                Model model = new Model(args[0].ToString());
+                var dims = model.GetDimensions();
+
+                cl_Logging.Log($"Dims: {dims.ToString()}");
+
+            }), false);
         }
     }
 }
+//prop_box_tea01a

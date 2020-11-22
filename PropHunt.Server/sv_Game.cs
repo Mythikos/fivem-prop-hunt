@@ -13,7 +13,7 @@ using PropHunt.Server.Extensions;
 
 namespace PropHunt.Server
 {
-    internal static class sv_GameManager
+    internal static class sv_Game
     {
         #region Instance Variables / Properties
         private const float TIMER_UPDATE_INTERVAL = 250f;
@@ -24,10 +24,10 @@ namespace PropHunt.Server
         #endregion
 
         #region Constructors
-        static sv_GameManager()
+        static sv_Game()
         {
-            sv_GameManager.State = GameStates.WaitingForPlayers;
-            sv_GameManager.TimeRemainingInSeconds = 0;
+            sv_Game.State = GameStates.WaitingForPlayers;
+            sv_Game.TimeRemainingInSeconds = 0;
             _updateGameStateTimer = new System.Threading.Timer(UpdateGameStateCallback, null, 0, (int)TIMER_UPDATE_INTERVAL);
         }
         #endregion
@@ -36,7 +36,7 @@ namespace PropHunt.Server
         public static void UpdateGameStateCallback(object threadState)
         {
             var allActivePlayers = sv_Init.PlayerList.GetAllActivePlayers();
-            if (sv_GameManager.State == GameStates.WaitingForPlayers)
+            if (sv_Game.State == GameStates.WaitingForPlayers)
             {
                 if (allActivePlayers.Count() >= 2)
                 {
@@ -62,14 +62,14 @@ namespace PropHunt.Server
 
                     //
                     // Update state
-                    sv_GameManager.State = GameStates.PreRound;
-                    sv_GameManager.TimeRemainingInSeconds = 15;
+                    sv_Game.State = GameStates.PreRound;
+                    sv_Game.TimeRemainingInSeconds = 15;
                 }
             }
 
-            else if (sv_GameManager.State == GameStates.PreRound)
+            else if (sv_Game.State == GameStates.PreRound)
             {
-                if (sv_GameManager.TimeRemainingInSeconds <= 0)
+                if (sv_Game.TimeRemainingInSeconds <= 0)
                 {
                     //
                     // Trigger game state change event
@@ -77,13 +77,13 @@ namespace PropHunt.Server
 
                     //
                     // Update state
-                    sv_GameManager.State = GameStates.Hiding;
-                    sv_GameManager.TimeRemainingInSeconds = 60;
+                    sv_Game.State = GameStates.Hiding;
+                    sv_Game.TimeRemainingInSeconds = 60;
                 }
             }
-            else if (sv_GameManager.State == GameStates.Hiding)
+            else if (sv_Game.State == GameStates.Hiding)
             {
-                if (sv_GameManager.TimeRemainingInSeconds <= 0
+                if (sv_Game.TimeRemainingInSeconds <= 0
                     || allActivePlayers.Count(x => x.State.Get<PlayerTeams>(Constants.State.Player.Team) == PlayerTeams.Prop) <= 0
                     || allActivePlayers.Count(x => x.State.Get<PlayerTeams>(Constants.State.Player.Team) == PlayerTeams.Hunter) <= 0)
                 {
@@ -93,14 +93,14 @@ namespace PropHunt.Server
 
                     //
                     // Update state
-                    sv_GameManager.State = GameStates.Hunting;
-                    sv_GameManager.TimeRemainingInSeconds = 300;
+                    sv_Game.State = GameStates.Hunting;
+                    sv_Game.TimeRemainingInSeconds = 300;
                 }
             }
 
-            else if (sv_GameManager.State == GameStates.Hunting)
+            else if (sv_Game.State == GameStates.Hunting)
             {
-                if (sv_GameManager.TimeRemainingInSeconds <= 0
+                if (sv_Game.TimeRemainingInSeconds <= 0
                     || allActivePlayers.Count(x => x.State.Get<PlayerTeams>(Constants.State.Player.Team) == PlayerTeams.Prop) <= 0
                     || allActivePlayers.Count(x => x.State.Get<PlayerTeams>(Constants.State.Player.Team) == PlayerTeams.Hunter) <= 0)
                 {
@@ -110,14 +110,14 @@ namespace PropHunt.Server
 
                     //
                     // Update state
-                    sv_GameManager.State = GameStates.PostRound;
-                    sv_GameManager.TimeRemainingInSeconds = 30;
+                    sv_Game.State = GameStates.PostRound;
+                    sv_Game.TimeRemainingInSeconds = 30;
                 }
             }
 
-            else if (sv_GameManager.State == GameStates.PostRound)
+            else if (sv_Game.State == GameStates.PostRound)
             {
-                if (sv_GameManager.TimeRemainingInSeconds <= 0)
+                if (sv_Game.TimeRemainingInSeconds <= 0)
                 {
                     //
                     // Trigger game state change event
@@ -125,17 +125,17 @@ namespace PropHunt.Server
 
                     //
                     // Update state
-                    sv_GameManager.State = GameStates.WaitingForPlayers;
+                    sv_Game.State = GameStates.WaitingForPlayers;
                 }
             }
 
             //
             // Decrement time
-            sv_GameManager.TimeRemainingInSeconds = (sv_GameManager.TimeRemainingInSeconds <= 0) ? 0 : sv_GameManager.TimeRemainingInSeconds - TIMER_UPDATE_INTERVAL / 1000f;
+            sv_Game.TimeRemainingInSeconds = (sv_Game.TimeRemainingInSeconds <= 0) ? 0 : sv_Game.TimeRemainingInSeconds - TIMER_UPDATE_INTERVAL / 1000f;
 
             //
             // Send a global update regarding the current state and time remaining
-            sv_Init.TriggerClientEvent(Constants.Events.GameManager.OnSyncGameState, (int)sv_GameManager.State, sv_GameManager.TimeRemainingInSeconds);
+            sv_Init.TriggerClientEvent(Constants.Events.GameManager.OnSyncGameState, (int)sv_Game.State, sv_Game.TimeRemainingInSeconds);
         }
         #endregion
     }

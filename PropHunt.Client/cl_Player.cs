@@ -25,13 +25,11 @@ namespace PropHunt.Client
         private const int HEALTH_MIN = 1;
 
         private static Dictionary<Player, int> _playerTags;
-        private static Player _spectateTarget;
         #endregion
 
         static cl_Player()
         {
             _playerTags = new Dictionary<Player, int>();
-            _spectateTarget = null;
 
             cl_Player.Reset();
             Game.Player.State.Set(Constants.State.Player.PropHandle, null, true);
@@ -122,7 +120,7 @@ namespace PropHunt.Client
         {
             //
             // Is it the right state
-            if (cl_GameManager.GameState == GameStates.Hiding || cl_GameManager.GameState == GameStates.Hunting)
+            if (cl_Game.GameState == GameStates.Hiding || cl_Game.GameState == GameStates.Hunting)
             {
                 var playerState = Game.Player.State.Get<PlayerTeams>(Constants.State.Player.Team);
 
@@ -144,6 +142,7 @@ namespace PropHunt.Client
                     foreach (int componentValue in Enum.GetValues(typeof(HudComponent)))
                         if (componentValue != (int)HudComponent.Reticle)
                             HideHudComponentThisFrame(componentValue);
+                    BlockWeaponWheelThisFrame();
 
                     List<Entity> entities1 = EntityUtil.GetSurroundingEntities(Game.Player.Character, 10, EntityUtil.IntersectOptions.IntersectObjects).ToList();
                     foreach (Entity entity in entities1)
@@ -159,31 +158,11 @@ namespace PropHunt.Client
                         TextUtil.DrawText3D(GetEntityCoords(targetEntityHandle, true), "Press E");
                         EntityUtil.HighlightEntity(Entity.FromHandle(targetEntityHandle), 0.035f, 0.035f, 0.025f, 0.025f, new[] { 0, 255, 0, 255 });
                         if (IsControlJustPressed(0, 38))
-                            cl_Player.SetProp(targetEntityHandle);
+                            cl_Player.SetPlayerProp(targetEntityHandle);
                     }
 
                     if (Game.Player.State.Get(Constants.State.Player.PropHandle) != null)
                         SetPedCapsule(Game.Player.Character.Handle, 0.01f);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Handle the spectator mode
-        /// </summary>
-        /// <returns></returns>
-        public static async Task OnTick_HandleSpectate()
-        {
-            if (Game.Player.IsDead)
-            {
-                // Move between players
-                if (IsControlJustPressed(0, 24)) // Left mouse
-                {
-                    Spectate(1);
-                }
-                else if (IsControlJustPressed(0, 25)) // Right mouse
-                {
-                    Spectate(-1);
                 }
             }
         }
@@ -195,7 +174,7 @@ namespace PropHunt.Client
         {
             //
             // Unspectate
-            cl_Player.Unspectate();
+            cl_Player.Spectate.End();
 
             //
             // Determine type of spawn
@@ -220,7 +199,7 @@ namespace PropHunt.Client
 
             //
             // Begin spectate
-            cl_Player.Spectate();
+            cl_Player.Spectate.Start();
         }
 
         /// <summary>
@@ -237,70 +216,189 @@ namespace PropHunt.Client
 
             //
             // Begin spectate
-            cl_Player.Spectate();
+            cl_Player.Spectate.Start();
 
         }
         #endregion
 
-        #region Spectate methods
-        /// <summary>
-        /// Begins spectating a random player. If player is currently spectating, iterates forward or backward in the player list based on direction
-        /// </summary>
-        public static async Task Spectate(int direction = 1)
+        #region Spectator Mode
+        public static class Spectate
         {
-            Player player = null;
-            List<Player> playerList;
+            private static Player _target;
+            private static Camera _camera;
+            private static Vector3 _cameraAngle;
 
-            playerList = cl_Init.PlayerList.GetAllActivePlayers().Where(x => x.IsAlive && x.Equals(Game.Player) == false).ToList();
-            if (playerList.Count() > 0)
+            static Spectate()
             {
-                if (_spectateTarget != null)
-                {
-                    var wrappingPlayerList = WrappingIterator<Player>.CreateAt(playerList, _spectateTarget);
-                    if (direction == 1)
-                        player = wrappingPlayerList.GetNext();
-                    else if (direction == -1)
-                        player = wrappingPlayerList.GetPrevious();
-                }
-                else
-                {
-                    player = playerList.Random();
-                }
+                _target = null;
+                _camera = null;
+                _cameraAngle = Vector3.Zero;
+            }
 
-                if (player != null)
+            /// <summary>
+            /// Handle the spectator mode
+            /// </summary>
+            /// <returns></returns>
+            public static async Task OnTick()
+            {
+                Vector3 newPosition;
+
+                if (_camera != null && _target != null)
+                {
+                    //
+                    // Disable UI elements
+                    DisableFirstPersonCamThisFrame();
+                    BlockWeaponWheelThisFrame();
+
+                    //
+                    // Move between players
+                    if (IsControlJustPressed(0, 24)) // Left mouse
+                    {
+                        cl_Logging.Log("Changing target forward");
+                        await Spectate.ChangeTarget(1);
+                    }
+                    else if (IsControlJustPressed(0, 25)) // Right mouse
+                    {
+                        cl_Logging.Log("Changing target backward");
+                        await Spectate.ChangeTarget(-1);
+                    }
+
+                    //
+                    // Handle camera position/angle
+                    newPosition = Spectate.ProcessPosition();
+                    SetFocusArea(newPosition.X, newPosition.Y, newPosition.Z, 0f, 0f, 0f);
+                    _camera.Position = newPosition;
+                    _camera.PointAt(_target.Character.Position + new Vector3(0f, 0f, 0.5f));
+                }
+            }
+
+            public static void Start()
+            {
+                if (_camera == null)
+                {
+                    ClearFocus();
+                    _camera = World.CreateCamera(Game.Player.Character.Position, Vector3.Zero, GetGameplayCamFov());
+                    _camera.IsActive = true;
+                    RenderScriptCams(true, false, 0, true, false);
+                    Spectate.ChangeTarget(0);
+                }
+            }
+
+            public static async Task ChangeTarget(int direction = 1)
+            {
+                Player player = null;
+                List<Player> playerList;
+                WrappingIterator<Player> playerListIterator;
+
+                // Get alive players that aren't the local player
+                playerList = cl_Init.PlayerList.GetAllActivePlayers().Where(x => x.IsAlive && x.Equals(Game.Player) == false).ToList();
+                if (playerList.Count() > 0)
+                {
+                    // Do we have an existing target?
+                    if (_target != null && _target.Character != null)
+                    {
+                        // Lets move from this target's index
+                        if (direction > 0) // Forward
+                        {
+                            playerListIterator = WrappingIterator<Player>.CreateAt(playerList, _target);
+                            player = playerListIterator.GetNext();
+                        }
+                        else if (direction < 0) // Backwards
+                        {
+                            playerListIterator = WrappingIterator<Player>.CreateAt(playerList, _target);
+                            player = playerListIterator.GetPrevious();
+                        }
+                        else if (direction == 0) // Randomize
+                        {
+                            player = playerList.Random();
+                        }
+                    }
+                    else
+                    {
+                        // Randomize the target
+                        player = playerList.Random();
+                    }
+
+                    // Verify we found a target and the target is different
+                    if (player != null && player.Equals(_target) == false)
+                    {
+                        DoScreenFadeOut(500);
+                        await BaseScript.Delay(500);
+
+                        _target = player;
+
+                        DoScreenFadeIn(500);
+                        await BaseScript.Delay(500);
+                    }
+                }
+            }
+
+            public static async Task End()
+            {
+                if (_camera != null)
                 {
                     DoScreenFadeOut(500);
                     await BaseScript.Delay(500);
 
-                    if (player.Character != null)
-                    {
-                        RequestCollisionAtCoord(player.Character.Position.X, player.Character.Position.Y, player.Character.Position.Z);
-                        NetworkSetInSpectatorMode(false, 0);
-                        NetworkSetInSpectatorMode(true, player.Character.Handle);
-                    }
-                    _spectateTarget = player;
+                    ClearFocus();
+                    RenderScriptCams(false, false, 0, true, false);
+                    _camera.Delete();
+
+                    _camera = null;
+                    _target = null;
 
                     DoScreenFadeIn(500);
                     await BaseScript.Delay(500);
                 }
             }
-        }
 
-        /// <summary>
-        /// Resets the camera and stops spectating the player
-        /// </summary>
-        public static async Task Unspectate()
-        {
-            if (NetworkIsInSpectatorMode())
+            private static Vector3 ProcessPosition()
             {
-                DoScreenFadeOut(500);
-                await BaseScript.Delay(500);
+                const float RADIUS = 6f;
+                float mouseX = default;
+                float mouseY = default;
+                Vector3 behindCam = default;
+                Vector3 offset = default;
+                Vector3 position = default;
+                int rayHandle = default;
+                bool rayHit = default;
+                Vector3 rayEndCoords = default;
+                Vector3 raySurfaceNormal = default;
+                int rayEntityHit = default;
 
-                NetworkSetInSpectatorMode(false, 0);
-                _spectateTarget = null;
+                mouseX = GetDisabledControlNormal(1, 1);
+                mouseY = GetDisabledControlNormal(1, 2);
 
-                DoScreenFadeIn(500);
-                await BaseScript.Delay(500);
+                _cameraAngle.Z = _cameraAngle.Z - mouseX;
+                _cameraAngle.Y = _cameraAngle.Y + mouseY;
+                if (_cameraAngle.Y > 89f)
+                    _cameraAngle.Y = 89f;
+                else if (_cameraAngle.Y < -89f)
+                    _cameraAngle.Y = -89f;
+
+                behindCam = new Vector3();
+                behindCam.X = _target.Character.Position.X + (((float)Math.Cos(_cameraAngle.Z) * (float)Math.Cos(_cameraAngle.Y)) + ((float)Math.Cos(_cameraAngle.Y) * (float)Math.Cos(_cameraAngle.Z))) / 2f * (RADIUS + 0.5f);
+                behindCam.Y = _target.Character.Position.Y + (((float)Math.Sin(_cameraAngle.Z) * (float)Math.Cos(_cameraAngle.Y)) + ((float)Math.Cos(_cameraAngle.Y) * (float)Math.Sin(_cameraAngle.Z))) / 2f * (RADIUS + 0.5f);
+                behindCam.Z = _target.Character.Position.Z + (((float)Math.Sin(_cameraAngle.Y))) * (RADIUS + 0.5f);
+
+                rayHandle = StartShapeTestRay(_target.Character.Position.X, _target.Character.Position.Y, _target.Character.Position.Z + 0.5f, behindCam.X, behindCam.Y, behindCam.Z, -1, _target.Character.Handle, 0);
+                GetShapeTestResult(rayHandle, ref rayHit, ref rayEndCoords, ref raySurfaceNormal, ref rayEntityHit);
+
+                var maxRadius = RADIUS;
+                if (rayHit && Vdist(_target.Character.Position.X, _target.Character.Position.Y, _target.Character.Position.Z + 0.5f, rayEndCoords.X, rayEndCoords.Y, rayEndCoords.Z) < RADIUS + 0.5)
+                    maxRadius = Vdist(_target.Character.Position.X, _target.Character.Position.Y, _target.Character.Position.Z + 0.5f, rayEndCoords.X, rayEndCoords.Y, rayEndCoords.Z);
+
+                offset = new Vector3();
+                offset.X = (((float)Math.Cos(_cameraAngle.Z) * (float)Math.Cos(_cameraAngle.Y)) + ((float)Math.Cos(_cameraAngle.Y) * (float)Math.Cos(_cameraAngle.Z))) / 2 * maxRadius;
+                offset.Y = (((float)Math.Sin(_cameraAngle.Z) * (float)Math.Cos(_cameraAngle.Y)) + ((float)Math.Cos(_cameraAngle.Y) * (float)Math.Sin(_cameraAngle.Z))) / 2 * maxRadius;
+                offset.Z = (((float)Math.Sin(_cameraAngle.Y))) * maxRadius;
+
+                position = new Vector3();
+                position.X = _target.Character.Position.X + offset.X;
+                position.Y = _target.Character.Position.Y + offset.Y;
+                position.Z = _target.Character.Position.Z + offset.Z;
+
+                return position;
             }
         }
         #endregion
@@ -335,7 +433,7 @@ namespace PropHunt.Client
         /// Sets the player's pedestrian as a prop
         /// </summary>
         /// <param name="entityHandle"></param>
-        public static void SetProp(int entityHandle)
+        public static void SetPlayerProp(int entityHandle)
         {
             int pedHandle = default;
             int propHandle = default;
@@ -375,7 +473,7 @@ namespace PropHunt.Client
             //
             // Handle if the player already has a prop handle
             if (Game.Player.State.Get(Constants.State.Player.PropHandle) != null)
-                cl_Player.RemoveProp();
+                cl_Player.RemovePlayerProp();
 
             //
             // Process the change
@@ -419,7 +517,7 @@ namespace PropHunt.Client
         /// <summary>
         /// Removes the prop from the player's pedestrian and resets their stats
         /// </summary>
-        public static void RemoveProp()
+        public static void RemovePlayerProp()
         {
             int propHandle = default;
 
@@ -444,7 +542,7 @@ namespace PropHunt.Client
         /// </summary>
         public static void Reset()
         {
-            cl_Player.RemoveProp();
+            cl_Player.RemovePlayerProp();
             cl_Player.SetVisible(true);
             cl_Player.SetInvincible(true);
             cl_Player.SetHealth(HEALTH_MAX);
