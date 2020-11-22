@@ -14,24 +14,8 @@ using System.Dynamic;
 using System.Threading;
 using PropHunt.Shared.Attributes;
 using PropHunt.Shared.Extensions;
+using Newtonsoft.Json;
 
-/// <summary>
-/// TODO:
-///     Need to add locations or "sections" of the map to play on
-///     Prop rotation replication is not working
-///     
-///     Add actual player hud to game.
-///         Name
-///         Scoreboard
-///         Health/Armor
-///         Idle indicator until next taunt
-///         
-/// TUNING:
-///     Adjust spectator camera's sentitivity. Maybe use player's configured sensitivity.
-///     Spectator camera doesn't show player's gamertag if they are outside of the range of the spectator's body.
-///     Add new taunt audio clips.
-///     Optimize prop highlighting. Appears to be a massive FPS drop around a lot of props.
-/// </summary>
 namespace PropHunt.Client
 {
     public class cl_Init : BaseScript
@@ -68,22 +52,27 @@ namespace PropHunt.Client
                 this.Tick += cl_Player.OnTick_DrawComponents;
                 this.Tick += cl_Player.Spectate.OnTick;
 
-                this.EventHandlers.Add(Constants.Actions.Player.Kill, new Action(() => { Game.Player.Character.Kill(); }));
-                this.EventHandlers.Add(Constants.Actions.Player.Spawn, new Action<float, float, float>((float x, float y, float z) => { this.SpawnManager_SpawnPlayer(x, y, z); }));
+                this.EventHandlers.Add(Constants.Events.Player.Kill, new Action(() => { Game.Player.Character.Kill(); }));
+                this.EventHandlers.Add(Constants.Events.Player.Spawn, new Action<float, float, float>((float x, float y, float z) => { this.SpawnManager_SpawnPlayer(x, y, z); }));
+                
                 this.EventHandlers.Add("gameEventTriggered", new Action<string, List<dynamic>>(OnEntityDamage));
                 this.EventHandlers.Add("playerSpawned", new Action(cl_Player.OnPlayerSpawned));
                 this.EventHandlers.Add("baseevents:onPlayerDied", new Action<Player, int>(cl_Player.OnPlayerDied));
                 this.EventHandlers.Add("baseevents:onPlayerKilled", new Action<Player, int, dynamic>(cl_Player.OnPlayerKilled));
+                
                 this.EventHandlers.Add(Constants.Events.GameManager.OnSyncGameState, new Action<int, float>(cl_Game.OnSyncGameState));
                 this.EventHandlers.Add(Constants.Events.GameManager.OnGameStateChanged, new Action<int>(cl_Game.OnGameStateChanged));
-                this.EventHandlers.Add(Constants.Actions.Environment.SetTime, new Action<int>(cl_Environment.SetTime));
-                this.EventHandlers.Add(Constants.Actions.Environment.SetWeather, new Action<int>(cl_Environment.SetWeather));
-                this.EventHandlers.Add(Constants.Actions.Environment.SetWeatherAndTime, new Action<int, int>(cl_Environment.SetWeatherAndTime));
-                this.EventHandlers.Add(Constants.Actions.Audio.Play, new Action<string, string>(cl_Audio.Play));
-                this.EventHandlers.Add(Constants.Actions.Audio.PlayFromPlayer, new Action<string, string>(cl_Audio.PlayFromPlayer));
-                this.EventHandlers.Add(Constants.Actions.Audio.PlayFromPosition, new Action<float, float, float, string, string>(cl_Audio.PlayFromPosition));
-                this.EventHandlers.Add(Constants.Actions.World.Setup, new Action(cl_World.Setup));
-                this.EventHandlers.Add(Constants.Actions.World.Cleanup, new Action<float, float, float, float>(cl_World.Cleanup));
+                
+                this.EventHandlers.Add(Constants.Events.Environment.SetTime, new Action<int>(cl_Environment.SetTime));
+                this.EventHandlers.Add(Constants.Events.Environment.SetWeather, new Action<int>(cl_Environment.SetWeather));
+                this.EventHandlers.Add(Constants.Events.Environment.SetWeatherAndTime, new Action<int, int>(cl_Environment.SetWeatherAndTime));
+                
+                this.EventHandlers.Add(Constants.Events.Audio.Play, new Action<string, string>(cl_Audio.Play));
+                this.EventHandlers.Add(Constants.Events.Audio.PlayFromPlayer, new Action<string, string>(cl_Audio.PlayFromPlayer));
+                this.EventHandlers.Add(Constants.Events.Audio.PlayFromPosition, new Action<float, float, float, string, string>(cl_Audio.PlayFromPosition));
+
+                this.EventHandlers.Add(Constants.Events.World.Setup, new Action<string>((string json) => { cl_World.Setup(JsonConvert.DeserializeObject<cl_World.Zone>(json)); }));
+                this.EventHandlers.Add(Constants.Events.World.Cleanup, new Action<string>((string json) => { cl_World.Cleanup(JsonConvert.DeserializeObject<cl_World.Zone>(json)); }));
 
                 Debug.WriteLine($"PropHunt.Client was loaded successfully.");
             }

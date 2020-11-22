@@ -23,7 +23,7 @@ namespace PropHunt.Server
         /// <param name="audioName"></param>
         /// <param name="audioReference"></param>
         public static void PlayFromPlayer(Player player, string audioName, string audioReference)
-            => sv_Init.TriggerClientEvent(player, Constants.Actions.Audio.PlayFromPlayer, audioName, audioReference);
+            => sv_Init.TriggerClientEvent(player, Constants.Events.Audio.PlayFromPlayer, audioName, audioReference);
 
         /// <summary>
         /// Plays a sound at the coordinate specified
@@ -32,7 +32,7 @@ namespace PropHunt.Server
         /// <param name="audioName"></param>
         /// <param name="audioReference"></param>
         public static void PlayFromPosition(Vector3 position, string audioName, string audioReference)
-            => sv_Init.TriggerClientEvent(Constants.Actions.Audio.PlayFromPosition, position.X, position.Y, position.Z, audioName, audioReference);
+            => sv_Init.TriggerClientEvent(Constants.Events.Audio.PlayFromPosition, position.X, position.Y, position.Z, audioName, audioReference);
 
         /// <summary>
         /// Emits the sound for the player to hear
@@ -41,6 +41,6 @@ namespace PropHunt.Server
         /// <param name="audioName"></param>
         /// <param name="audioReference"></param>
         public static void Play(Player player, string audioName, string audioReference)
-            => sv_Init.TriggerClientEvent(Constants.Actions.Audio.Play, audioName, audioReference);
+            => sv_Init.TriggerClientEvent(Constants.Events.Audio.Play, audioName, audioReference);
     }
 }

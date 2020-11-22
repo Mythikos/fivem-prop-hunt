@@ -326,6 +326,7 @@ namespace PropHunt.Client
                         await BaseScript.Delay(500);
 
                         _target = player;
+                        RequestCollisionAtCoord(_target.Character.Position.X, _target.Character.Position.Y, _target.Character.Position.Z);
 
                         DoScreenFadeIn(500);
                         await BaseScript.Delay(500);

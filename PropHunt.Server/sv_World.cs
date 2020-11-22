@@ -1,112 +1,56 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using CitizenFX.Core;
-using CitizenFX.Core.Native;
+﻿using CitizenFX.Core;
+using Newtonsoft.Json;
 using PropHunt.Shared;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using static CitizenFX.Core.Native.API;
 
 namespace PropHunt.Server
 {
-    /// <summary>
-    /// What do we want it to do?
-    ///     Load zones (defined by coordinates (min,max) and generate a wall at that boundary. 
-    ///     Remove zone walls
-    ///     Load props for specific zones
-    ///     Cleanup all props within a zone
-    /// </summary>
     internal static class sv_World
     {
         public static List<Zone> Zones { get; set; }
+        public static Zone CurrentZone { get; private set; }
 
         static sv_World()
         {
             sv_World.Zones = new List<Zone>();
-        }
-
-        /// <summary>
-        /// Creates the zone which includes its boundary walls and props
-        /// </summary>
-        /// <returns></returns>
-        public static async void Setup(Zone zone)
-        {
-            sv_World.Cleanup(zone);
-            sv_World.GenerateWalls(zone);
-            sv_World.GenerateProps();
-        }
-
-        /// <summary>
-        /// Cleans the zone of all props excluding boundaries.
-        /// </summary>
-        /// <returns></returns>
-        public static async void Cleanup(Zone zone)
-        {
-            Vector3 center = zone.GetCenter();
-            float radius = zone.GetRadius();
-            sv_Init.TriggerClientEvent(Constants.Actions.World.Cleanup, center.X, center.Y, center.Z, radius);
-        }
-
-        /// <summary>
-        /// Generates the boundary walls for any given area
-        /// </summary>
-        public static async void GenerateWalls(Zone zone)
-        {
-            int point1Index, point2Index;
-            Vector3 point1, point2;
-            Vector3 propPosition;
-            int propHandle;
-            float cellWidth = 4;
-            int cellSegmentsWidth = 0;
-            float lerpValue = 0f;
-
-            // Iterate over each point
-            for (point1Index = 0; point1Index < zone.Points.Count; point1Index++)
+            
+            sv_World.Zones.Add(new sv_World.Zone()
             {
-                // Wrap to beginning of collection
-                point2Index = point1Index + 1;
-                if (point2Index >= zone.Points.Count)
-                    point2Index = 0;
-
-                // Get points
-                point1 = zone.Points[point1Index];
-                point2 = zone.Points[point2Index];
-
-                // Calculate segments cell
-                cellSegmentsWidth = (int)Math.Ceiling(Vector3.Distance(point1, point2) / cellWidth);
-
-                // Reset lerp value
-                lerpValue = 0f;
-
-                // Iterate over n number of segments and do the thing
-                for (int i = 0; i < cellSegmentsWidth; i++)
+                Points = new List<Vector3>()
                 {
-                    lerpValue += 1f / cellSegmentsWidth;
-                    propPosition = Vector3.Lerp(point1, point2, lerpValue);
-                    propHandle = CreateObjectNoOffset((uint)GetHashKey("prop_mp_cone_04"), propPosition.X, propPosition.Y, propPosition.Z, true, true, true);
-                    FreezeEntityPosition(propHandle, true);
+                    new Vector3(-1420, 207, 58),
+                    new Vector3(-1450, 243, 60),
+                    new Vector3(-1468, 234, 59),
+                    new Vector3(-1496, 199, 57),
+                    new Vector3(-1499, 169, 54),
+                    new Vector3(-1457, 135, 52),
+                    new Vector3(-1455, 151, 54),
+                    new Vector3(-1439, 180, 56),
                 }
-            }
+            });
         }
 
-        public static void GenerateProps()
+        public static void Setup(Zone zone)
         {
+            sv_World.CurrentZone = zone;
+            sv_Init.TriggerClientEvent(Constants.Events.World.Setup, JsonConvert.SerializeObject(sv_World.CurrentZone));
+        }
 
+        public static void Cleanup(Zone zone)
+        {
+            sv_Init.TriggerClientEvent(Constants.Events.World.Cleanup, JsonConvert.SerializeObject(sv_World.CurrentZone));
         }
 
         #region Sub Classes
         public class Zone
         {
             public List<Vector3> Points { get; set; }
-            public List<Prop> Props { get; set; }
 
             public Zone()
-            {
-                this.Points = new List<Vector3>();
-                this.Props = new List<Prop>();
-            }
+                => this.Points = new List<Vector3>();
 
             public float GetRadius()
                 => (float)Math.Round(Math.Sqrt(Math.Pow(this.Points.Sum(point => Math.Abs(point.X)), 2f) + Math.Pow(this.Points.Sum(point => Math.Abs(point.Y)), 2f)), 3);

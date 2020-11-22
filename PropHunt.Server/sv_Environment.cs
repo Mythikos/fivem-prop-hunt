@@ -19,7 +19,7 @@ namespace PropHunt.Server
         /// </summary>
         /// <param name="weatherState"></param>
         public static void SetWeather(WeatherStates weatherState)
-            => sv_Init.TriggerClientEvent(Constants.Actions.Environment.SetWeather, (int)weatherState);
+            => sv_Init.TriggerClientEvent(Constants.Events.Environment.SetWeather, (int)weatherState);
 
         /// <summary>
         /// Randomizes the weather state and assigns it to each client
@@ -32,7 +32,7 @@ namespace PropHunt.Server
         /// </summary>
         /// <param name="timeOfDayState"></param>
         public static void SetTime(TimeOfDayStates timeOfDayState)
-            => sv_Init.TriggerClientEvent(Constants.Actions.Environment.SetTime, (int)timeOfDayState);
+            => sv_Init.TriggerClientEvent(Constants.Events.Environment.SetTime, (int)timeOfDayState);
 
         /// <summary>
         /// Randomizes the time state and assigns it to each client
@@ -46,7 +46,7 @@ namespace PropHunt.Server
         /// <param name="weatherState"></param>
         /// <param name="timeOfDayState"></param>
         public static void SetWeatherAndTime(WeatherStates weatherState, TimeOfDayStates timeOfDayState)
-            => sv_Init.TriggerClientEvent(Constants.Actions.Environment.SetWeatherAndTime, (int)weatherState, (int)timeOfDayState);
+            => sv_Init.TriggerClientEvent(Constants.Events.Environment.SetWeatherAndTime, (int)weatherState, (int)timeOfDayState);
 
         /// <summary>
         /// Randomizes the weather and time state and assigns it to each client

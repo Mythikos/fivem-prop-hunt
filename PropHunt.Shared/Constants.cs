@@ -21,13 +21,6 @@ namespace PropHunt.Shared
             {
                 public const string OnInitialSpawn = "fcca7d65805f455b8d2659f45bcb1131";
                 public const string OnSpawn = "6d14dab90b22468991b100855871e221";
-            }
-
-        }
-        public static class Actions
-        {
-            public static class Player
-            {
                 public const string Spawn = "70d23f12e7634b84983f5295270c88ac";
                 public const string Kill = "a493fb7f772b46a9b21c2d22417c64bf";
                 public const string GetCoords = "82c78ce2337448cdb026597b7fab8120";
@@ -49,8 +42,8 @@ namespace PropHunt.Shared
 
             public static class World
             {
+                public const string Cleanup = "940020df5a1043d7bccce6e862966d0e";
                 public const string Setup = "c654cfc4504c48069516a05765ce409b";
-                public const string Cleanup = "28940621d06a4ca38b023bbd40bd96a3";
             }
         }
 

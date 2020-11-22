@@ -57,7 +57,7 @@ namespace PropHunt.Client
             }
             else if (gameState.Equals(GameStates.PreRound))
             {
-                cl_Init.TriggerEvent(Constants.Actions.Player.Spawn, -1486, 195, 56);
+                cl_Init.TriggerEvent(Constants.Events.Player.Spawn, -1486, 195, 56);
                 cl_Player.SetInvincible(true);
             }
             else if (gameState.Equals(GameStates.Hiding))

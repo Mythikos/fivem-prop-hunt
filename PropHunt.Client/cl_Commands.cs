@@ -89,7 +89,7 @@ namespace PropHunt.Client
 
             RegisterCommand("spawn", new Action<int, List<object>, string>((source, args, raw) =>
             {
-                cl_Init.TriggerEvent(Constants.Actions.Player.Spawn, Game.PlayerPed.Position.X, Game.PlayerPed.Position.Y, Game.PlayerPed.Position.Z);
+                cl_Init.TriggerEvent(Constants.Events.Player.Spawn, Game.PlayerPed.Position.X, Game.PlayerPed.Position.Y, Game.PlayerPed.Position.Z);
             }), false);
 
             //

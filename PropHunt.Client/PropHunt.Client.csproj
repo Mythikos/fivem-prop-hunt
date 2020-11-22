@@ -35,6 +35,10 @@
     <NoWarn>CS4014,CS1998</NoWarn>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Libs\Shared\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="PropHunt.Shared.net">
       <HintPath>..\PropHunt.Shared\bin\Release\PropHunt.Shared.net.dll</HintPath>
     </Reference>

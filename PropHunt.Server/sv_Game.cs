@@ -56,6 +56,13 @@ namespace PropHunt.Server
                     }
 
                     //
+                    // Pick zone
+                    if (sv_World.CurrentZone != default)
+                        sv_World.Cleanup(sv_World.CurrentZone);
+                    sv_World.Zone zone = sv_World.Zones.Random();
+                    sv_World.Setup(zone);
+
+                    //
                     // Trigger game state change event
                     sv_Environment.RandomizeWeatherAndTime();
                     sv_Init.TriggerClientEvent(Constants.Events.GameManager.OnGameStateChanged, (int)GameStates.PreRound);
