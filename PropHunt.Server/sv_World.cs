@@ -54,43 +54,40 @@ namespace PropHunt.Server
         /// </summary>
         public static async void GenerateWalls(Zone zone)
         {
-            int handle = 0;
+            int point1Index, point2Index;
+            Vector3 point1, point2;
+            Vector3 propPosition;
+            int propHandle;
+            float cellWidth = 4;
+            int cellSegmentsWidth = 0;
             float lerpValue = 0f;
-            float distance = 0f;
-            
-            int cellSegments = 0;
-            float cellWidth = 1.1f;
-            float cellHeight = 0.8f;
 
             // Iterate over each point
-            for (int p1Index = 0; p1Index < zone.Points.Count; p1Index++)
+            for (point1Index = 0; point1Index < zone.Points.Count; point1Index++)
             {
                 // Wrap to beginning of collection
-                int p2Index = p1Index + 1;
-                if (p2Index >= zone.Points.Count)
-                    p2Index = 0;
+                point2Index = point1Index + 1;
+                if (point2Index >= zone.Points.Count)
+                    point2Index = 0;
 
                 // Get points
-                var p1 = zone.Points[p1Index];
-                var p2 = zone.Points[p2Index];
-                sv_Logging.Log($"p1: {p1}");
-                sv_Logging.Log($"p2: {p2}");
+                point1 = zone.Points[point1Index];
+                point2 = zone.Points[point2Index];
 
-                // Calculate
-                cellSegments = (int)Math.Ceiling(Vector3.Distance(p1, p2) / cellWidth);
-                sv_Logging.Log($"segments: {cellSegments}");
+                // Calculate segments cell
+                cellSegmentsWidth = (int)Math.Ceiling(Vector3.Distance(point1, point2) / cellWidth);
 
+                // Reset lerp value
                 lerpValue = 0f;
-                distance = 1f / cellSegments;
-                sv_Logging.Log($"distance: {distance}");
-                for (int i = 0; i < cellSegments; i++)
+
+                // Iterate over n number of segments and do the thing
+                for (int i = 0; i < cellSegmentsWidth; i++)
                 {
-                    lerpValue += distance;
-                    var pos = Vector3.Lerp(p1, p2, lerpValue);
-                    handle = CreateObjectNoOffset((uint)GetHashKey("prop_box_ammo03a_set2"/*"prop_ld_fragwall_01a"*/), pos.X, pos.Y, 60, true, true, true);
-                    FreezeEntityPosition(handle, true);
+                    lerpValue += 1f / cellSegmentsWidth;
+                    propPosition = Vector3.Lerp(point1, point2, lerpValue);
+                    propHandle = CreateObjectNoOffset((uint)GetHashKey("prop_mp_cone_04"), propPosition.X, propPosition.Y, propPosition.Z, true, true, true);
+                    FreezeEntityPosition(propHandle, true);
                 }
-                sv_Logging.Log($"--------------------------");
             }
         }
 
@@ -116,9 +113,6 @@ namespace PropHunt.Server
 
             public Vector3 GetCenter()
                 => new Vector3(this.Points.Average(point => point.X), this.Points.Average(point => point.Y), this.Points.Average(point => point.Z));
-
-            public float LowestZ()
-                => this.Points.Min(point => point.Z);
         }
         #endregion
     }
